@@ -1,0 +1,707 @@
+INFO:Detectors:
+ERC20Detailed.______gap (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#45) shadows:
+        - Initializable.______gap (zos-lib/contracts/Initializable.sol#60)
+Ownable.______gap (openzeppelin-eth/contracts/ownership/Ownable.sol#80) shadows:
+        - Initializable.______gap (zos-lib/contracts/Initializable.sol#60)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variable-shadowing
+INFO:Detectors:
+Initializable.isConstructor() (zos-lib/contracts/Initializable.sol#48-57) is declared view but contains assembly code
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#constant-functions-using-assembly-code
+INFO:Detectors:
+DollarsPolicy.rebase() (dollarsPolicy.sol#77-132) performs a multiplication on the result of a division:
+        -dollarCoinExchangeRate = ethUsdcPrice.mul(10 ** 21).div(ethUsdPrice) (dollarsPolicy.sol#94-95)
+        -shareExchangeRate = sharePrice.mul(dollarCoinExchangeRate).div(10 ** 9) (dollarsPolicy.sol#97)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
+INFO:Detectors:
+Reentrancy in Dollars._burn(address,uint256) (dollars.sol#470-490):
+        External calls:
+        - usdPerShare = DollarPolicy.getUsdSharePrice() (dollars.sol#479)
+        - Shares.mintShares(account,sharesToMint) (dollars.sol#483)
+        State variables written after the call(s):
+        - reEntrancyMutex = false (dollars.sol#486)
+Reentrancy in Dollars.approve(address,uint256) (dollars.sol#366-376):
+        External calls:
+        - updateAccount(msg.sender) (dollars.sol#369)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(spender) (dollars.sol#370)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - updateAccount(spender) (dollars.sol#370)
+                - _dollarBalances[account] += owing (dollars.sol#257)
+        - updateAccount(spender) (dollars.sol#370)
+                - _unclaimedDividends = _unclaimedDividends.sub(owing) (dollars.sol#256)
+        - updateAccount(spender) (dollars.sol#370)
+                - reEntrancyMutex = true (dollars.sol#251)
+                - reEntrancyMutex = false (dollars.sol#262)
+Reentrancy in Dollars.burn(uint256) (dollars.sol#398-406):
+        External calls:
+        - _burn(msg.sender,amount) (dollars.sol#405)
+                - usdPerShare = DollarPolicy.getUsdSharePrice() (dollars.sol#479)
+                - Shares.mintShares(account,sharesToMint) (dollars.sol#483)
+        - updateAccount(msg.sender) (dollars.sol#398)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - _burn(msg.sender,amount) (dollars.sol#405)
+                - _dollarBalances[account] = _dollarBalances[account].sub(amount) (dollars.sol#475)
+        - _burn(msg.sender,amount) (dollars.sol#405)
+                - reEntrancyMutex = true (dollars.sol#477)
+                - reEntrancyMutex = false (dollars.sol#486)
+Reentrancy in Dollars.decreaseAllowance(address,uint256) (dollars.sol#414-428):
+        External calls:
+        - updateAccount(spender) (dollars.sol#416)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(msg.sender) (dollars.sol#417)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - updateAccount(msg.sender) (dollars.sol#417)
+                - _dollarBalances[account] += owing (dollars.sol#257)
+        - updateAccount(msg.sender) (dollars.sol#417)
+                - _unclaimedDividends = _unclaimedDividends.sub(owing) (dollars.sol#256)
+        - updateAccount(msg.sender) (dollars.sol#417)
+                - reEntrancyMutex = true (dollars.sol#251)
+                - reEntrancyMutex = false (dollars.sol#262)
+Reentrancy in Dollars.increaseAllowance(address,uint256) (dollars.sol#385-395):
+        External calls:
+        - updateAccount(msg.sender) (dollars.sol#387)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(spender) (dollars.sol#388)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - updateAccount(spender) (dollars.sol#388)
+                - _dollarBalances[account] += owing (dollars.sol#257)
+        - updateAccount(spender) (dollars.sol#388)
+                - _unclaimedDividends = _unclaimedDividends.sub(owing) (dollars.sol#256)
+        - updateAccount(spender) (dollars.sol#388)
+                - reEntrancyMutex = true (dollars.sol#251)
+                - reEntrancyMutex = false (dollars.sol#262)
+Reentrancy in Dollars.rebase(uint256,int256) (dollars.sol#171-211):
+        External calls:
+        - disburse(uint256(supplyDelta)) (dollars.sol#202)
+                - _totalDividendPoints = _totalDividendPoints.add(amount.mul(POINT_MULTIPLIER).div(Shares.externalTotalSupply())) (dollars.sol#464)
+        State variables written after the call(s):
+        - _totalSupply = MAX_SUPPLY (dollars.sol#206)
+Reentrancy in Dollars.transfer(address,uint256) (dollars.sol#305-316):
+        External calls:
+        - updateAccount(msg.sender) (dollars.sol#308)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(to) (dollars.sol#309)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - _dollarBalances[msg.sender] = _dollarBalances[msg.sender].sub(value) (dollars.sol#312)
+        - _dollarBalances[to] = _dollarBalances[to].add(value) (dollars.sol#313)
+        - updateAccount(to) (dollars.sol#309)
+                - _dollarBalances[account] += owing (dollars.sol#257)
+        - updateAccount(to) (dollars.sol#309)
+                - _unclaimedDividends = _unclaimedDividends.sub(owing) (dollars.sol#256)
+        - updateAccount(to) (dollars.sol#309)
+                - reEntrancyMutex = true (dollars.sol#251)
+                - reEntrancyMutex = false (dollars.sol#262)
+Reentrancy in Dollars.transferFrom(address,address,uint256) (dollars.sol#338-353):
+        External calls:
+        - updateAccount(from) (dollars.sol#341)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(msg.sender) (dollars.sol#342)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(to) (dollars.sol#343)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - _dollarBalances[from] = _dollarBalances[from].sub(value) (dollars.sol#348)
+        - _dollarBalances[to] = _dollarBalances[to].add(value) (dollars.sol#349)
+        - updateAccount(to) (dollars.sol#343)
+                - _dollarBalances[account] += owing (dollars.sol#257)
+        - updateAccount(to) (dollars.sol#343)
+                - _unclaimedDividends = _unclaimedDividends.sub(owing) (dollars.sol#256)
+        - updateAccount(to) (dollars.sol#343)
+                - reEntrancyMutex = true (dollars.sol#251)
+                - reEntrancyMutex = false (dollars.sol#262)
+Reentrancy in Dollars.transferFrom(address,address,uint256) (dollars.sol#338-353):
+        External calls:
+        - updateAccount(from) (dollars.sol#341)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(msg.sender) (dollars.sol#342)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - updateAccount(msg.sender) (dollars.sol#342)
+                - _dollarBalances[account] += owing (dollars.sol#257)
+        - updateAccount(msg.sender) (dollars.sol#342)
+                - _unclaimedDividends = _unclaimedDividends.sub(owing) (dollars.sol#256)
+        - updateAccount(msg.sender) (dollars.sol#342)
+                - reEntrancyMutex = true (dollars.sol#251)
+                - reEntrancyMutex = false (dollars.sol#262)
+Reentrancy in Dollars.updateAccount(address) (dollars.sol#249-266):
+        External calls:
+        - owing = dividendsOwing(account) (dollars.sol#253)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+        - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - reEntrancyMutex = false (dollars.sol#262)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-1
+INFO:Detectors:
+Dollars.setMinimumBonusThreshold(uint256) (dollars.sol#157-164) contains a tautology or contradiction:
+        - require(bool,string)(minimum >= 0,POSITIVE_MINIMUM) (dollars.sol#161)
+Dollars.burn(uint256) (dollars.sol#398-406) contains a tautology or contradiction:
+        - require(bool,string)(burningDiscount >= 0,DISCOUNT_NOT_VALID) (dollars.sol#400)
+Dollars.consultBurn(uint256) (dollars.sol#430-445) contains a tautology or contradiction:
+        - require(bool,string)(burningDiscount >= 0,DISCOUNT_NOT_VALID) (dollars.sol#435)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#tautology-or-contradiction
+INFO:Detectors:
+Dollars._burn(address,uint256) (dollars.sol#470-490) ignores return value by Shares.mintShares(account,sharesToMint) (dollars.sol#483)
+Dollars.updateAccount(address) (dollars.sol#249-266) ignores return value by Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+SeigniorageShares.updateAccount(address) (seigniorageShares.sol#253-258) ignores return value by Dollars.claimDividends(account) (seigniorageShares.sol#256)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+INFO:Detectors:
+ERC20Detailed.initialize(string,string,uint8).name (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#18) shadows:
+        - ERC20Detailed.name() (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#27-29) (function)
+ERC20Detailed.initialize(string,string,uint8).symbol (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#18) shadows:
+        - ERC20Detailed.symbol() (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#34-36) (function)
+ERC20Detailed.initialize(string,string,uint8).decimals (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#18) shadows:
+        - ERC20Detailed.decimals() (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#41-43) (function)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#local-variable-shadowing
+INFO:Detectors:
+Reentrancy in Dollars._burn(address,uint256) (dollars.sol#470-490):
+        External calls:
+        - usdPerShare = DollarPolicy.getUsdSharePrice() (dollars.sol#479)
+        - Shares.mintShares(account,sharesToMint) (dollars.sol#483)
+        State variables written after the call(s):
+        - _remainingDollarsToBeBurned = _remainingDollarsToBeBurned.sub(amount) (dollars.sol#484)
+Reentrancy in Dollars.approve(address,uint256) (dollars.sol#366-376):
+        External calls:
+        - updateAccount(msg.sender) (dollars.sol#369)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(spender) (dollars.sol#370)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - _allowedDollars[msg.sender][spender] = value (dollars.sol#373)
+Reentrancy in SeigniorageShares.approve(address,uint256) (seigniorageShares.sol#193-203):
+        External calls:
+        - updateAccount(msg.sender) (seigniorageShares.sol#196)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(spender) (seigniorageShares.sol#197)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        State variables written after the call(s):
+        - _allowedShares[msg.sender][spender] = value (seigniorageShares.sol#200)
+Reentrancy in Dollars.decreaseAllowance(address,uint256) (dollars.sol#414-428):
+        External calls:
+        - updateAccount(spender) (dollars.sol#416)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(msg.sender) (dollars.sol#417)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - _allowedDollars[msg.sender][spender] = 0 (dollars.sol#422)
+        - _allowedDollars[msg.sender][spender] = oldValue.sub(subtractedValue) (dollars.sol#424)
+Reentrancy in SeigniorageShares.decreaseAllowance(address,uint256) (seigniorageShares.sol#236-250):
+        External calls:
+        - updateAccount(msg.sender) (seigniorageShares.sol#238)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(spender) (seigniorageShares.sol#239)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        State variables written after the call(s):
+        - _allowedShares[msg.sender][spender] = 0 (seigniorageShares.sol#244)
+        - _allowedShares[msg.sender][spender] = oldValue.sub(subtractedValue) (seigniorageShares.sol#246)
+Reentrancy in Dollars.disburse(uint256) (dollars.sol#463-468):
+        External calls:
+        - _totalDividendPoints = _totalDividendPoints.add(amount.mul(POINT_MULTIPLIER).div(Shares.externalTotalSupply())) (dollars.sol#464)
+        State variables written after the call(s):
+        - _totalSupply = _totalSupply.add(amount) (dollars.sol#465)
+        - _unclaimedDividends = _unclaimedDividends.add(amount) (dollars.sol#466)
+Reentrancy in Dollars.increaseAllowance(address,uint256) (dollars.sol#385-395):
+        External calls:
+        - updateAccount(msg.sender) (dollars.sol#387)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(spender) (dollars.sol#388)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - _allowedDollars[msg.sender][spender] = _allowedDollars[msg.sender][spender].add(addedValue) (dollars.sol#391-392)
+Reentrancy in SeigniorageShares.increaseAllowance(address,uint256) (seigniorageShares.sol#218-228):
+        External calls:
+        - updateAccount(msg.sender) (seigniorageShares.sol#220)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(spender) (seigniorageShares.sol#221)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        State variables written after the call(s):
+        - _allowedShares[msg.sender][spender] = _allowedShares[msg.sender][spender].add(addedValue) (seigniorageShares.sol#224-225)
+Reentrancy in SeigniorageShares.transfer(address,uint256) (seigniorageShares.sol#132-143):
+        External calls:
+        - updateAccount(msg.sender) (seigniorageShares.sol#134)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(to) (seigniorageShares.sol#135)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        State variables written after the call(s):
+        - _shareBalances[msg.sender].balance = _shareBalances[msg.sender].balance.sub(value) (seigniorageShares.sol#139)
+        - _shareBalances[to].balance = _shareBalances[to].balance.add(value) (seigniorageShares.sol#140)
+Reentrancy in Dollars.transferFrom(address,address,uint256) (dollars.sol#338-353):
+        External calls:
+        - updateAccount(from) (dollars.sol#341)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(msg.sender) (dollars.sol#342)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(to) (dollars.sol#343)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        State variables written after the call(s):
+        - _allowedDollars[from][msg.sender] = _allowedDollars[from][msg.sender].sub(value) (dollars.sol#346)
+Reentrancy in SeigniorageShares.transferFrom(address,address,uint256) (seigniorageShares.sol#165-180):
+        External calls:
+        - updateAccount(from) (seigniorageShares.sol#168)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(msg.sender) (seigniorageShares.sol#169)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(to) (seigniorageShares.sol#170)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        State variables written after the call(s):
+        - _allowedShares[from][msg.sender] = _allowedShares[from][msg.sender].sub(value) (seigniorageShares.sol#173)
+        - _shareBalances[from].balance = _shareBalances[from].balance.sub(value) (seigniorageShares.sol#175)
+        - _shareBalances[to].balance = _shareBalances[to].balance.add(value) (seigniorageShares.sol#176)
+Reentrancy in Dollars.updateAccount(address) (dollars.sol#249-266):
+        External calls:
+        - owing = dividendsOwing(account) (dollars.sol#253)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+        State variables written after the call(s):
+        - _dollarBalances[account] += owing (dollars.sol#257)
+        - _unclaimedDividends = _unclaimedDividends.sub(owing) (dollars.sol#256)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-2
+INFO:Detectors:
+Reentrancy in Dollars._burn(address,uint256) (dollars.sol#470-490):
+        External calls:
+        - usdPerShare = DollarPolicy.getUsdSharePrice() (dollars.sol#479)
+        - Shares.mintShares(account,sharesToMint) (dollars.sol#483)
+        Event emitted after the call(s):
+        - LogBurn(account,amount) (dollars.sol#489)
+        - Transfer(account,address(0),amount) (dollars.sol#488)
+Reentrancy in Dollars.approve(address,uint256) (dollars.sol#366-376):
+        External calls:
+        - updateAccount(msg.sender) (dollars.sol#369)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(spender) (dollars.sol#370)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        Event emitted after the call(s):
+        - Approval(msg.sender,spender,value) (dollars.sol#374)
+        - LogClaim(account,owing) (dollars.sol#264)
+                - updateAccount(spender) (dollars.sol#370)
+Reentrancy in SeigniorageShares.approve(address,uint256) (seigniorageShares.sol#193-203):
+        External calls:
+        - updateAccount(msg.sender) (seigniorageShares.sol#196)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(spender) (seigniorageShares.sol#197)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        Event emitted after the call(s):
+        - Approval(msg.sender,spender,value) (seigniorageShares.sol#201)
+Reentrancy in Dollars.burn(uint256) (dollars.sol#398-406):
+        External calls:
+        - _burn(msg.sender,amount) (dollars.sol#405)
+                - usdPerShare = DollarPolicy.getUsdSharePrice() (dollars.sol#479)
+                - Shares.mintShares(account,sharesToMint) (dollars.sol#483)
+        - updateAccount(msg.sender) (dollars.sol#398)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        Event emitted after the call(s):
+        - LogBurn(account,amount) (dollars.sol#489)
+                - _burn(msg.sender,amount) (dollars.sol#405)
+        - Transfer(account,address(0),amount) (dollars.sol#488)
+                - _burn(msg.sender,amount) (dollars.sol#405)
+Reentrancy in Dollars.decreaseAllowance(address,uint256) (dollars.sol#414-428):
+        External calls:
+        - updateAccount(spender) (dollars.sol#416)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(msg.sender) (dollars.sol#417)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        Event emitted after the call(s):
+        - Approval(msg.sender,spender,_allowedDollars[msg.sender][spender]) (dollars.sol#426)
+        - LogClaim(account,owing) (dollars.sol#264)
+                - updateAccount(msg.sender) (dollars.sol#417)
+Reentrancy in SeigniorageShares.decreaseAllowance(address,uint256) (seigniorageShares.sol#236-250):
+        External calls:
+        - updateAccount(msg.sender) (seigniorageShares.sol#238)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(spender) (seigniorageShares.sol#239)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        Event emitted after the call(s):
+        - Approval(msg.sender,spender,_allowedShares[msg.sender][spender]) (seigniorageShares.sol#248)
+Reentrancy in Dollars.increaseAllowance(address,uint256) (dollars.sol#385-395):
+        External calls:
+        - updateAccount(msg.sender) (dollars.sol#387)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(spender) (dollars.sol#388)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        Event emitted after the call(s):
+        - Approval(msg.sender,spender,_allowedDollars[msg.sender][spender]) (dollars.sol#393)
+        - LogClaim(account,owing) (dollars.sol#264)
+                - updateAccount(spender) (dollars.sol#388)
+Reentrancy in SeigniorageShares.increaseAllowance(address,uint256) (seigniorageShares.sol#218-228):
+        External calls:
+        - updateAccount(msg.sender) (seigniorageShares.sol#220)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(spender) (seigniorageShares.sol#221)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        Event emitted after the call(s):
+        - Approval(msg.sender,spender,_allowedShares[msg.sender][spender]) (seigniorageShares.sol#226)
+Reentrancy in Dollars.rebase(uint256,int256) (dollars.sol#171-211):
+        External calls:
+        - disburse(uint256(supplyDelta)) (dollars.sol#202)
+                - _totalDividendPoints = _totalDividendPoints.add(amount.mul(POINT_MULTIPLIER).div(Shares.externalTotalSupply())) (dollars.sol#464)
+        Event emitted after the call(s):
+        - LogRebase(epoch,_totalSupply) (dollars.sol#203)
+Reentrancy in Orchestrator.rebase() (orchestrator.sol#30-48):
+        External calls:
+        - policy.rebase() (orchestrator.sol#35)
+        Event emitted after the call(s):
+        - TransactionFailed(t.destination,i,t.data) (orchestrator.sol#43)
+Reentrancy in DollarsPolicy.rebase() (dollarsPolicy.sol#77-132):
+        External calls:
+        - sharesPerUsdOracle.update() (dollarsPolicy.sol#88)
+        - ethPerUsdOracle.update() (dollarsPolicy.sol#89)
+        - ethPerUsdcOracle.update() (dollarsPolicy.sol#90)
+        - ethUsdcPrice = ethPerUsdcOracle.consult(WETH_ADDRESS,1 * 10 ** 18) (dollarsPolicy.sol#92)
+        - ethUsdPrice = ethPerUsdOracle.consult(WETH_ADDRESS,1 * 10 ** 18) (dollarsPolicy.sol#93)
+        - sharePrice = sharesPerUsdOracle.consult(SHARE_ADDRESS,1 * 10 ** 9) (dollarsPolicy.sol#96)
+        - supplyDelta = computeSupplyDelta(dollarCoinExchangeRate,targetRate) (dollarsPolicy.sol#106)
+                - dollars.totalSupply().toInt256Safe().mul(rate.toInt256Safe().sub(targetRateSigned)).div(targetRateSigned) (dollarsPolicy.sol#252-254)
+        - supplyDelta > 0 && dollars.totalSupply().add(uint256(supplyDelta)) > MAX_SUPPLY (dollarsPolicy.sol#112)
+        - supplyDelta = (MAX_SUPPLY.sub(dollars.totalSupply())).toInt256Safe() (dollarsPolicy.sol#113)
+        - supplyDelta < 0 && dollars.getRemainingDollarsToBeBurned().add(uint256(supplyDelta.abs())) > MAX_SUPPLY (dollarsPolicy.sol#117)
+        - supplyDelta = (MAX_SUPPLY.sub(dollars.getRemainingDollarsToBeBurned())).toInt256Safe() (dollarsPolicy.sol#118)
+        - supplyAfterRebase = dollars.rebase(epoch,(sharesToMint).toInt256Safe().mul(- 1)) (dollarsPolicy.sol#125)
+        - supplyAfterRebase = dollars.rebase(epoch,supplyDelta) (dollarsPolicy.sol#127)
+        Event emitted after the call(s):
+        - LogRebase(epoch,dollarCoinExchangeRate,cpi,supplyDelta,now) (dollarsPolicy.sol#131)
+Reentrancy in Dollars.transfer(address,uint256) (dollars.sol#305-316):
+        External calls:
+        - updateAccount(msg.sender) (dollars.sol#308)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(to) (dollars.sol#309)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        Event emitted after the call(s):
+        - LogClaim(account,owing) (dollars.sol#264)
+                - updateAccount(to) (dollars.sol#309)
+        - Transfer(msg.sender,to,value) (dollars.sol#314)
+Reentrancy in SeigniorageShares.transfer(address,uint256) (seigniorageShares.sol#132-143):
+        External calls:
+        - updateAccount(msg.sender) (seigniorageShares.sol#134)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(to) (seigniorageShares.sol#135)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        Event emitted after the call(s):
+        - Transfer(msg.sender,to,value) (seigniorageShares.sol#141)
+Reentrancy in Dollars.transferFrom(address,address,uint256) (dollars.sol#338-353):
+        External calls:
+        - updateAccount(from) (dollars.sol#341)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(msg.sender) (dollars.sol#342)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(to) (dollars.sol#343)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        Event emitted after the call(s):
+        - LogClaim(account,owing) (dollars.sol#264)
+                - updateAccount(to) (dollars.sol#343)
+        - Transfer(from,to,value) (dollars.sol#350)
+Reentrancy in Dollars.transferFrom(address,address,uint256) (dollars.sol#338-353):
+        External calls:
+        - updateAccount(from) (dollars.sol#341)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        - updateAccount(msg.sender) (dollars.sol#342)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+                - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        Event emitted after the call(s):
+        - LogClaim(account,owing) (dollars.sol#264)
+                - updateAccount(msg.sender) (dollars.sol#342)
+Reentrancy in SeigniorageShares.transferFrom(address,address,uint256) (seigniorageShares.sol#165-180):
+        External calls:
+        - updateAccount(from) (seigniorageShares.sol#168)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(msg.sender) (seigniorageShares.sol#169)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        - updateAccount(to) (seigniorageShares.sol#170)
+                - Dollars.claimDividends(account) (seigniorageShares.sol#256)
+        Event emitted after the call(s):
+        - Transfer(from,to,value) (seigniorageShares.sol#177)
+Reentrancy in Dollars.updateAccount(address) (dollars.sol#249-266):
+        External calls:
+        - owing = dividendsOwing(account) (dollars.sol#253)
+                - _totalDividendPoints > Shares.lastDividendPoints(account) (dollars.sol#237)
+                - newDividendPoints = _totalDividendPoints.sub(Shares.lastDividendPoints(account)) (dollars.sol#238)
+                - sharesBalance = Shares.externalRawBalanceOf(account) (dollars.sol#239)
+        - Shares.setDividendPoints(account,_totalDividendPoints) (dollars.sol#260)
+        Event emitted after the call(s):
+        - LogClaim(account,owing) (dollars.sol#264)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+INFO:Detectors:
+DollarsPolicy.rebase() (dollarsPolicy.sol#77-132) uses timestamp for comparisons
+        Dangerous comparisons:
+        - require(bool)(lastRebaseTimestampSec.add(minRebaseTimeIntervalSec) < now) (dollarsPolicy.sol#81)
+DollarsPolicy.inRebaseWindow() (dollarsPolicy.sol#235-240) uses timestamp for comparisons
+        Dangerous comparisons:
+        - (now.mod(minRebaseTimeIntervalSec) >= rebaseWindowOffsetSec && now.mod(minRebaseTimeIntervalSec) < (rebaseWindowOffsetSec.add(rebaseWindowLengthSec))) (dollarsPolicy.sol#236-239)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Initializable.isConstructor() (zos-lib/contracts/Initializable.sol#48-57) uses assembly
+        - INLINE ASM None (zos-lib/contracts/Initializable.sol#55-56)
+Orchestrator.externalCall(address,bytes) (orchestrator.sol#90-120) uses assembly
+        - INLINE ASM None (orchestrator.sol#95-119)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#assembly-usage
+INFO:Detectors:
+SeigniorageShares.initializeDollar(address) (seigniorageShares.sol#101-105) compares to a boolean constant:
+        -require(bool,string)(_initializedDollar == false,ALREADY_INITIALIZED) (seigniorageShares.sol#102)
+SeigniorageShares.updateAccount(address) (seigniorageShares.sol#253-258) compares to a boolean constant:
+        -require(bool,string)(_initializedDollar == true,DOLLAR_NEEDS_INITIALIZATION) (seigniorageShares.sol#254)
+DollarsPolicy.rebase() (dollarsPolicy.sol#77-132) compares to a boolean constant:
+        -require(bool,string)(initializedOracle == true,ORACLE_NOT_INITIALIZED) (dollarsPolicy.sol#79)
+DollarsPolicy.initializeOracles(address,address,address) (dollarsPolicy.sol#164-175) compares to a boolean constant:
+        -require(bool,string)(initializedOracle == false,ALREADY_INITIALIZED_ORACLE) (dollarsPolicy.sol#169)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#boolean-equality
+INFO:Detectors:
+Different versions of Solidity is used in :
+        - Version used: ['>=0.4.22', '>=0.4.24', '>=0.4.24<0.6.0', '^0.4.24']
+        - >=0.4.24 (lib/UInt256Lib.sol#1)
+        - >=0.4.24 (mocks/SafeMathIntMock.sol#1)
+        - >=0.4.24 (mocks/Mock.sol#1)
+        - >=0.4.24 (lib/SafeMathInt.sol#25)
+        - >=0.4.24 (mocks/UInt256LibMock.sol#1)
+        - >=0.4.24 (dollars.sol#1)
+        - >=0.4.24 (mocks/MockDollarsPolicy.sol#1)
+        - ^0.4.24 (openzeppelin-eth/contracts/math/SafeMath.sol#1)
+        - >=0.4.24<0.6.0 (zos-lib/contracts/Initializable.sol#1)
+        - >=0.4.24 (mocks/MockDollars.sol#1)
+        - >=0.4.24 (mocks/MockOracle.sol#1)
+        - >=0.4.24 (seigniorageShares.sol#1)
+        - >=0.4.24 (interface/IDollars.sol#1)
+        - >=0.4.24 (orchestrator.sol#1)
+        - >=0.4.24 (interface/ISeignorageShares.sol#1)
+        - >=0.4.24 (dollarsPolicy.sol#1)
+        - >=0.4.24 (mocks/MockDownstream.sol#1)
+        - ^0.4.24 (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#1)
+        - >=0.4.22 (migrations.sol#1)
+        - >=0.4.24 (mocks/ConstructorRebaseCallerContract.sol#1)
+        - ^0.4.24 (openzeppelin-eth/contracts/ownership/Ownable.sol#1)
+        - ^0.4.24 (openzeppelin-eth/contracts/token/ERC20/IERC20.sol#1)
+        - >=0.4.24 (mocks/RebaseCallerContract.sol#1)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#different-pragma-directives-are-used
+INFO:Detectors:
+Pragma version>=0.4.24 (lib/UInt256Lib.sol#1) allows old versions
+Pragma version>=0.4.24 (mocks/SafeMathIntMock.sol#1) allows old versions
+Pragma version>=0.4.24 (mocks/Mock.sol#1) allows old versions
+Pragma version>=0.4.24 (lib/SafeMathInt.sol#25) allows old versions
+Pragma version>=0.4.24 (mocks/UInt256LibMock.sol#1) allows old versions
+Pragma version>=0.4.24 (dollars.sol#1) allows old versions
+Pragma version>=0.4.24 (mocks/MockDollarsPolicy.sol#1) allows old versions
+Pragma version^0.4.24 (openzeppelin-eth/contracts/math/SafeMath.sol#1) allows old versions
+Pragma version>=0.4.24<0.6.0 (zos-lib/contracts/Initializable.sol#1) allows old versions
+Pragma version>=0.4.24 (mocks/MockDollars.sol#1) allows old versions
+Pragma version>=0.4.24 (mocks/MockOracle.sol#1) allows old versions
+Pragma version>=0.4.24 (seigniorageShares.sol#1) allows old versions
+Pragma version>=0.4.24 (interface/IDollars.sol#1) allows old versions
+Pragma version>=0.4.24 (orchestrator.sol#1) allows old versions
+Pragma version>=0.4.24 (interface/ISeignorageShares.sol#1) allows old versions
+Pragma version>=0.4.24 (dollarsPolicy.sol#1) allows old versions
+Pragma version>=0.4.24 (mocks/MockDownstream.sol#1) allows old versions
+Pragma version^0.4.24 (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#1) allows old versions
+Pragma version>=0.4.22 (migrations.sol#1) allows old versions
+Pragma version>=0.4.24 (mocks/ConstructorRebaseCallerContract.sol#1) allows old versions
+Pragma version^0.4.24 (openzeppelin-eth/contracts/ownership/Ownable.sol#1) allows old versions
+Pragma version^0.4.24 (openzeppelin-eth/contracts/token/ERC20/IERC20.sol#1) allows old versions
+Pragma version>=0.4.24 (mocks/RebaseCallerContract.sol#1) allows old versions
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+INFO:Detectors:
+Parameter Dollars.setMutex(bool)._val (dollars.sol#112) is not in mixedCase
+Variable Dollars.Shares (dollars.sol#75) is not in mixedCase
+Variable Dollars.DollarPolicy (dollars.sol#83) is not in mixedCase
+Variable Initializable.______gap (zos-lib/contracts/Initializable.sol#60) is not in mixedCase
+Variable SeigniorageShares.Dollars (seigniorageShares.sol#41) is not in mixedCase
+Variable DollarsPolicy.WETH_ADDRESS (dollarsPolicy.sol#54) is not in mixedCase
+Variable DollarsPolicy.SHARE_ADDRESS (dollarsPolicy.sol#55) is not in mixedCase
+Variable ERC20Detailed.______gap (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#45) is not in mixedCase
+Variable Ownable.______gap (openzeppelin-eth/contracts/ownership/Ownable.sol#80) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+INFO:Detectors:
+SafeMathInt.MAX_INT256 (lib/SafeMathInt.sol#34) is never used in SafeMathInt (lib/SafeMathInt.sol#32-104)
+Ownable.______gap (openzeppelin-eth/contracts/ownership/Ownable.sol#80) is never used in Dollars (dollars.sol#18-491)
+Dollars.MAX_UINT256 (dollars.sol#56) is never used in Dollars (dollars.sol#18-491)
+Ownable.______gap (openzeppelin-eth/contracts/ownership/Ownable.sol#80) is never used in SeigniorageShares (seigniorageShares.sol#15-259)
+SeigniorageShares.MAX_UINT256 (seigniorageShares.sol#27) is never used in SeigniorageShares (seigniorageShares.sol#15-259)
+SeigniorageShares.MAX_SUPPLY (seigniorageShares.sol#30) is never used in SeigniorageShares (seigniorageShares.sol#15-259)
+Ownable.______gap (openzeppelin-eth/contracts/ownership/Ownable.sol#80) is never used in Orchestrator (orchestrator.sol#11-121)
+Ownable.______gap (openzeppelin-eth/contracts/ownership/Ownable.sol#80) is never used in DollarsPolicy (dollarsPolicy.sol#18-268)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-state-variables
+INFO:Detectors:
+initialize(address,address) should be declared external:
+        - Dollars.initialize(address,address) (dollars.sol#213-234)
+totalSupply() should be declared external:
+        - Dollars.totalSupply() (dollars.sol#271-277)
+        - SeigniorageShares.totalSupply() (seigniorageShares.sol#110-116)
+balanceOf(address) should be declared external:
+        - SeigniorageShares.balanceOf(address) (seigniorageShares.sol#118-124)
+        - Dollars.balanceOf(address) (dollars.sol#283-289)
+getRemainingDollarsToBeBurned() should be declared external:
+        - Dollars.getRemainingDollarsToBeBurned() (dollars.sol#291-297)
+transfer(address,uint256) should be declared external:
+        - SeigniorageShares.transfer(address,uint256) (seigniorageShares.sol#132-143)
+        - Dollars.transfer(address,uint256) (dollars.sol#305-316)
+allowance(address,address) should be declared external:
+        - SeigniorageShares.allowance(address,address) (seigniorageShares.sol#151-157)
+        - Dollars.allowance(address,address) (dollars.sol#324-330)
+transferFrom(address,address,uint256) should be declared external:
+        - Dollars.transferFrom(address,address,uint256) (dollars.sol#338-353)
+        - SeigniorageShares.transferFrom(address,address,uint256) (seigniorageShares.sol#165-180)
+approve(address,uint256) should be declared external:
+        - SeigniorageShares.approve(address,uint256) (seigniorageShares.sol#193-203)
+        - Dollars.approve(address,uint256) (dollars.sol#366-376)
+increaseAllowance(address,uint256) should be declared external:
+        - Dollars.increaseAllowance(address,uint256) (dollars.sol#385-395)
+burn(uint256) should be declared external:
+        - Dollars.burn(uint256) (dollars.sol#398-406)
+decreaseAllowance(address,uint256) should be declared external:
+        - Dollars.decreaseAllowance(address,uint256) (dollars.sol#414-428)
+consultBurn(uint256) should be declared external:
+        - Dollars.consultBurn(uint256) (dollars.sol#430-445)
+unclaimedDividends() should be declared external:
+        - Dollars.unclaimedDividends() (dollars.sol#447-453)
+totalDividendPoints() should be declared external:
+        - Dollars.totalDividendPoints() (dollars.sol#455-461)
+storeSupply(uint256) should be declared external:
+        - MockDollars.storeSupply(uint256) (mocks/MockDollars.sol#10-14)
+rebase(uint256,int256) should be declared external:
+        - MockDollars.rebase(uint256,int256) (mocks/MockDollars.sol#17-28)
+totalSupply() should be declared external:
+        - MockDollars.totalSupply() (mocks/MockDollars.sol#30-36)
+storeData(uint256) should be declared external:
+        - MockOracle.storeData(uint256) (mocks/MockOracle.sol#26-30)
+initializeDollar(address) should be declared external:
+        - SeigniorageShares.initializeDollar(address) (seigniorageShares.sol#101-105)
+increaseAllowance(address,uint256) should be declared external:
+        - SeigniorageShares.increaseAllowance(address,uint256) (seigniorageShares.sol#218-228)
+decreaseAllowance(address,uint256) should be declared external:
+        - SeigniorageShares.decreaseAllowance(address,uint256) (seigniorageShares.sol#236-250)
+initialize(address,Dollars) should be declared external:
+        - DollarsPolicy.initialize(address,Dollars) (dollarsPolicy.sol#216-233)
+name() should be declared external:
+        - ERC20Detailed.name() (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#27-29)
+symbol() should be declared external:
+        - ERC20Detailed.symbol() (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#34-36)
+decimals() should be declared external:
+        - ERC20Detailed.decimals() (openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol#41-43)
+setCompleted(uint256) should be declared external:
+        - Migrations.setCompleted(uint256) (migrations.sol#16-18)
+upgrade(address) should be declared external:
+        - Migrations.upgrade(address) (migrations.sol#20-23)
+owner() should be declared external:
+        - Ownable.owner() (openzeppelin-eth/contracts/ownership/Ownable.sol#32-34)
+renounceOwnership() should be declared external:
+        - Ownable.renounceOwnership() (openzeppelin-eth/contracts/ownership/Ownable.sol#57-60)
+transferOwnership(address) should be declared external:
+        - Ownable.transferOwnership(address) (openzeppelin-eth/contracts/ownership/Ownable.sol#66-68)
+callRebase(address) should be declared external:
+        - RebaseCallerContract.callRebase(address) (mocks/RebaseCallerContract.sol#8-14)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#public-function-that-could-be-declared-as-external
+INFO:Slither:. analyzed (25 contracts with 46 detectors), 132 result(s) found
+INFO:Slither:Use https://crytic.io/ to get access to additional detectors and Github integration
