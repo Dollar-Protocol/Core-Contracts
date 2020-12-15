@@ -34,6 +34,7 @@ We ran internally a host of security tests, including Echidna, Manticore, Mythri
 * Decentralized Oracle SHR-USD: [0xbA20E267D061997b3e1CCBcd6843ef3e6626dCCd](http://etherscan.io/address/0xbA20E267D061997b3e1CCBcd6843ef3e6626dCCd)
 * Decentralized Oracle ETH-USD: [0x51f729D292f8cc6A0E1D4936fA1F4B5AaE1cFeEE](http://etherscan.io/address/0x51f729D292f8cc6A0E1D4936fA1F4B5AaE1cFeEE)
 * Decentralized Oracle ETH-USDC: [0x905C1036C12DF0e1701629979D7305bBB35D802b](http://etherscan.io/address/0x905C1036C12DF0e1701629979D7305bBB35D802b)
+* Decentralized Oracle xBOND-ETH [0xb2bc8e996331ee37ddac7050acafbec6109dd429](http://etherscan.io/address/0xb2bc8e996331ee37ddac7050acafbec6109dd429)
 * Liquidity Mining Reserve for future (Uniswap V3 and beyond) - Multisig: [0x01b6e2C30B27b3D2E15595E89F2115B139Eaf597](http://etherscan.io/address/0x01b6e2C30B27b3D2E15595E89F2115B139Eaf597)
 * Team: [0xf23A63b68671bc75E1e6644f2aBaCB0c1d8B5BB0](http://etherscan.io/address/0xf23A63b68671bc75E1e6644f2aBaCB0c1d8B5BB0)
 
