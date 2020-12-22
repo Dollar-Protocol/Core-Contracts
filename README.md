@@ -2,7 +2,7 @@
 
 # Dollar Protocol
 
-A better elastic money supply protocol, powered by two tokens.
+A better elastic money supply protocol, powered by $SHARE, $USDx and $xBOND.
 
 # Main Contracts
 * dollars.sol
