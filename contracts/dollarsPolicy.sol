@@ -3,7 +3,6 @@ pragma solidity >=0.4.24;
 import "../lib/SafeMathInt.sol";
 import "../lib/UInt256Lib.sol";
 import "./dollars.sol";
-import "../interface/IReserve.sol";
 
 /*
  *  Dollar Policy
@@ -98,18 +97,6 @@ contract DollarsPolicy is Ownable {
         timelock = timelock_;
     }
 
-    function initializeReserve(address treasury_)
-      external
-      onlyOwner
-      returns (bool)
-    {
-        maxSlippageFactor = 5409258 * 10; // 5.4% = 10 ^ 9 base
-        rebaseMintPerc = 10 ** 8; // 10%
-        treasury = treasury_;
-
-        return true;
-    }
-
     function updatePrice() external {
         sharesPerUsdOracle.update();
         ethPerUsdOracle.update();
@@ -175,26 +162,11 @@ contract DollarsPolicy is Ownable {
             uint256 dollarsToBurn = uint256(supplyDelta.abs());
             supplyAfterRebase = dollars.rebase(epoch, (dollarsToBurn).toInt256Safe().mul(-1));
         } else { // expansion, we send the amount of dollars to mint
-            uint256 treasuryAmount = uint256(supplyDelta).mul(rebaseMintPerc).div(10 ** 9);
-            uint256 supplyDeltaMinusTreasury = uint256(supplyDelta).sub(treasuryAmount);
-
-            supplyAfterRebase = dollars.rebase(epoch, (supplyDeltaMinusTreasury).toInt256Safe());
-
-            if (treasuryAmount > 0) {
-                IReserve(treasury).buyReserveAndTransfer(treasuryAmount);
-            }
+            supplyAfterRebase = dollars.rebase(epoch, (uint256(supplyDelta)).toInt256Safe());
         }
 
         assert(supplyAfterRebase <= MAX_SUPPLY);
         emit LogRebase(epoch, dollarCoinExchangeRate, cpi, supplyDelta, now);
-    }
-
-    function setPublicGoods(address public_goods_, uint256 public_goods_perc_)
-        external
-        onlyOwner
-    {
-        public_goods = public_goods_;
-        public_goods_perc = public_goods_perc_;
     }
 
     function setDeviationThreshold(uint256 deviationThreshold_)
@@ -299,26 +271,6 @@ contract DollarsPolicy is Ownable {
         minimumDollarCirculation = 1000000 * 10 ** 9; // 1M minimum dollar circulation
 
         dollars = dollars_;
-    }
-
-    function setMaxSlippageFactor(uint256 maxSlippageFactor_)
-        public
-        onlyOwner
-    {
-        require(maxSlippageFactor_ < MAX_SLIPPAGE_PARAM);
-        uint256 oldSlippageFactor = maxSlippageFactor;
-        maxSlippageFactor = maxSlippageFactor_;
-        emit NewMaxSlippageFactor(oldSlippageFactor, maxSlippageFactor_);
-    }
-
-    function setRebaseMintPerc(uint256 rebaseMintPerc_)
-        public
-        onlyOwner
-    {
-        require(rebaseMintPerc_ < MAX_MINT_PERC_PARAM, "Mint Percent Exceeds Maximum");
-        uint256 oldPerc = rebaseMintPerc;
-        rebaseMintPerc = rebaseMintPerc_;
-        emit NewRebaseMintPercent(oldPerc, rebaseMintPerc_);
     }
 
     function inRebaseWindow() public view returns (bool) {
