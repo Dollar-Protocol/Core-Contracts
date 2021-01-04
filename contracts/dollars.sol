@@ -281,29 +281,6 @@ contract Dollars is ERC20Detailed, Ownable {
         }
     }
 
-    function setDollarReserve(address dollarReserve_)
-        external
-        onlyOwner
-    {
-        dollarReserve = dollarReserve_;
-        emit LogDollarReserveUpdated(dollarReserve_);
-    }
-
-    // used by the treasury function
-    function mintCash(address account, uint256 amount)
-        external
-        onlyMinter
-        returns (bool)
-    {
-        require(amount != 0, "Invalid Amount");
-        _totalSupply = _totalSupply.add(amount);
-        _dollarBalances[account] = _dollarBalances[account].add(amount);
-
-        emit Transfer(address(0), account, amount);
-
-        return true;
-    }
-
     function setTenPercentCap(bool _val)
         external
         onlyOwner
