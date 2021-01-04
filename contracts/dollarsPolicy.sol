@@ -83,9 +83,19 @@ contract DollarsPolicy is Ownable {
     event NewMaxSlippageFactor(uint256 oldSlippageFactor, uint256 newSlippageFactor);
     event NewRebaseMintPercent(uint256 oldRebaseMintPerc, uint256 newRebaseMintPerc);
 
+    address public timelock;
+    IDecentralizedOracle public usdxPerUsdcOracle;
+
     function getUsdSharePrice() external view returns (uint256) {
         uint256 sharePrice = sharesPerUsdOracle.consult(SHARE_ADDRESS, 1 * 10 ** 9);        // 10^9 decimals
         return sharePrice;
+    }
+
+    function setTimelock(address timelock_)
+        external
+        onlyOwner
+    {
+        timelock = timelock_;
     }
 
     function initializeReserve(address treasury_)
@@ -100,11 +110,11 @@ contract DollarsPolicy is Ownable {
         return true;
     }
 
-    // function for updating oracle price
     function updatePrice() external {
         sharesPerUsdOracle.update();
         ethPerUsdOracle.update();
         ethPerUsdcOracle.update();
+        usdxPerUsdcOracle.update();
     }
 
     function rebase() external onlyOrchestrator {
@@ -121,14 +131,16 @@ contract DollarsPolicy is Ownable {
         sharesPerUsdOracle.update();
         ethPerUsdOracle.update();
         ethPerUsdcOracle.update();
+        usdxPerUsdcOracle.update();
 
-        uint256 ethUsdcPrice = ethPerUsdcOracle.consult(WETH_ADDRESS, 1 * 10 ** 18);        // 10^18 decimals ropsten, 10^6 mainnet
-        uint256 ethUsdPrice = ethPerUsdOracle.consult(WETH_ADDRESS, 1 * 10 ** 18);          // 10^9 decimals
-        uint256 dollarCoinExchangeRate = ethUsdcPrice.mul(10 ** 21)                         // 10^18 decimals, 10**9 ropsten, 10**21 on mainnet
-            .div(ethUsdPrice);
+        // OLD Oracle (v1)
+        // uint256 ethUsdcPrice = ethPerUsdcOracle.consult(WETH_ADDRESS, 1 * 10 ** 18);        // 10^18 decimals ropsten, 10^6 mainnet
+        // uint256 ethUsdPrice = ethPerUsdOracle.consult(WETH_ADDRESS, 1 * 10 ** 18);          // 10^9 decimals
+        // uint256 dollarCoinExchangeRate = ethUsdcPrice.mul(10 ** 21)                         // 10^18 decimals, 10**9 ropsten, 10**21 on mainnet
+        //     .div(ethUsdPrice)
 
-        uint256 sharePrice = sharesPerUsdOracle.consult(SHARE_ADDRESS, 1 * 10 ** 9);        // 10^9 decimals
-        uint256 shareExchangeRate = sharePrice.mul(dollarCoinExchangeRate).div(10 ** 9);    // 10^18 decimals
+        uint256 usdxUsdcPrice = usdxPerUsdcOracle.consult(address(dollars), 1 * 10 ** 9);      // 1 Usdx = ? usdc
+        uint256 dollarCoinExchangeRate = usdxUsdcPrice.mul(10 ** 12);                          // (10 ** 6) * (10 ** 12) = 10 ** 18
 
         uint256 targetRate = cpi;
 
@@ -136,16 +148,11 @@ contract DollarsPolicy is Ownable {
             dollarCoinExchangeRate = MAX_RATE;
         }
 
-        // dollarCoinExchangeRate & targetRate arre 10^18 decimals
+        // dollarCoinExchangeRate & targetRate are 10^18 decimals
         int256 supplyDelta = computeSupplyDelta(dollarCoinExchangeRate, targetRate);        // supplyDelta = 10^9 decimals
 
-        // // Apply the Dampening factor.
-        // // supplyDelta = supplyDelta.mul(10 ** 9).div(rebaseLag.toInt256Safe());
-
-        uint256 algorithmicLag_ = getAlgorithmicRebaseLag(supplyDelta);
-        require(algorithmicLag_ > 0, "algorithmic rate must be positive");
-        rebaseLag = algorithmicLag_;
-        supplyDelta = supplyDelta.mul(10 ** 9).div(algorithmicLag_.toInt256Safe()); // v 0.0.1
+        // Apply the Dampening factor.
+        supplyDelta = supplyDelta.mul(10 ** 9).div(rebaseLag.toInt256Safe());
 
         // check on the expansionary side
         if (supplyDelta > 0 && dollars.totalSupply().add(uint256(supplyDelta)) > MAX_SUPPLY) {
@@ -153,13 +160,13 @@ contract DollarsPolicy is Ownable {
         }
 
         // check on the contraction side
-        if (supplyDelta < 0 && dollars.getRemainingDollarsToBeBurned().add(uint256(supplyDelta.abs())) > MAX_SUPPLY) {
-            supplyDelta = (MAX_SUPPLY.sub(dollars.getRemainingDollarsToBeBurned())).toInt256Safe();
+        if (supplyDelta < 0 && uint256(supplyDelta.abs()) > MAX_SUPPLY) {
+            supplyDelta = (MAX_SUPPLY).toInt256Safe();
         }
 
         // set minimum floor
-        if (supplyDelta < 0 && dollars.totalSupply().sub(dollars.getRemainingDollarsToBeBurned().add(uint256(supplyDelta.abs()))) < minimumDollarCirculation) {
-            supplyDelta = (dollars.totalSupply().sub(dollars.getRemainingDollarsToBeBurned()).sub(minimumDollarCirculation)).toInt256Safe();
+        if (supplyDelta < 0 && dollars.totalSupply().add(dollars.totalDividendPoints()).sub(dollars.totalDebtPoints()).sub(uint256(supplyDelta.abs())) < minimumDollarCirculation) {
+            supplyDelta = (dollars.totalSupply().add(dollars.totalDividendPoints()).sub(dollars.totalDebtPoints()).sub(minimumDollarCirculation)).toInt256Safe();
         }
 
         uint256 supplyAfterRebase;
@@ -174,20 +181,12 @@ contract DollarsPolicy is Ownable {
             supplyAfterRebase = dollars.rebase(epoch, (supplyDeltaMinusTreasury).toInt256Safe());
 
             if (treasuryAmount > 0) {
-                // call reserve swap
                 IReserve(treasury).buyReserveAndTransfer(treasuryAmount);
             }
         }
 
         assert(supplyAfterRebase <= MAX_SUPPLY);
         emit LogRebase(epoch, dollarCoinExchangeRate, cpi, supplyDelta, now);
-    }
-
-    function setOrchestrator(address orchestrator_)
-        external
-        onlyOwner
-    {
-        orchestrator = orchestrator_;
     }
 
     function setPublicGoods(address public_goods_, uint256 public_goods_perc_)
@@ -200,8 +199,10 @@ contract DollarsPolicy is Ownable {
 
     function setDeviationThreshold(uint256 deviationThreshold_)
         external
-        onlyOwner
     {
+        require(msg.sender == timelock);
+        require(deviationThreshold_ != 0, "invalid deviationThreshold");
+        require(deviationThreshold_ <= 10 * 10 ** (DECIMALS-2), "invalid deviationThreshold");
         deviationThreshold = deviationThreshold_;
     }
 
@@ -223,8 +224,8 @@ contract DollarsPolicy is Ownable {
 
     function setRebaseLag(uint256 rebaseLag_)
         external
-        onlyOwner
     {
+        require(msg.sender == timelock);
         require(rebaseLag_ > 0);
         rebaseLag = rebaseLag_;
     }
@@ -242,28 +243,20 @@ contract DollarsPolicy is Ownable {
         initializedOracle = true;
     }
 
-    function changeOracles(
-        address sharesPerUsdOracleAddress,
-        address ethPerUsdOracleAddress,
-        address ethPerUsdcOracleAddress
-    ) external onlyOwner {
+    function setSharePerUsdOracle(address sharesPerUsdOracleAddress) external onlyOwner {
         sharesPerUsdOracle = IDecentralizedOracle(sharesPerUsdOracleAddress);
+    }
+
+    function setUSDxPerUsdcOracle(address usdxPerUsdcOracleAddress) external onlyOwner {
+        usdxPerUsdcOracle = IDecentralizedOracle(usdxPerUsdcOracleAddress);
+    }
+
+    function setEthPerUsdOracle(address ethPerUsdOracleAddress) external onlyOwner {
         ethPerUsdOracle = IDecentralizedOracle(ethPerUsdOracleAddress);
+    }
+
+    function setEthPerUsdcOracle(address ethPerUsdcOracleAddress) external onlyOwner {
         ethPerUsdcOracle = IDecentralizedOracle(ethPerUsdcOracleAddress);
-    }
-
-    function setWethAddress(address wethAddress)
-        external
-        onlyOwner
-    {
-        WETH_ADDRESS = wethAddress;
-    }
-
-    function setShareAddress(address shareAddress)
-        external
-        onlyOwner
-    {
-        SHARE_ADDRESS = shareAddress;
     }
 
     function setMinimumDollarCirculation(uint256 minimumDollarCirculation_)
@@ -306,23 +299,6 @@ contract DollarsPolicy is Ownable {
         minimumDollarCirculation = 1000000 * 10 ** 9; // 1M minimum dollar circulation
 
         dollars = dollars_;
-    }
-
-    // takes current marketcap of USD and calculates the algorithmic rebase lag
-    // returns 10 ** 9 rebase lag factor
-    function getAlgorithmicRebaseLag(int256 supplyDelta) public view returns (uint256) {
-        if (dollars.totalSupply() >= 30000000 * 10 ** 9) {
-            return 30 * 10 ** 9;
-        } else {
-            require(dollars.totalSupply() > 1000000 * 10 ** 9, "MINIMUM DOLLAR SUPPLY NOT MET");
-
-            if (supplyDelta < 0) {
-                uint256 dollarsToBurn = uint256(supplyDelta.abs()); // 1.238453076e15
-                return uint256(100 * 10 ** 9).sub((dollars.totalSupply().sub(1000000 * 10 ** 9)).div(500000));
-            } else {
-                return uint256(29).mul(dollars.totalSupply().sub(1000000 * 10 ** 9)).div(35000000).add(1 * 10 ** 9);
-            }
-        }
     }
 
     function setMaxSlippageFactor(uint256 maxSlippageFactor_)
