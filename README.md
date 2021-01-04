@@ -35,6 +35,11 @@ We ran internally a host of security tests, including Echidna, Manticore, Mythri
 * Decentralized Oracle ETH-USD: [0x51f729D292f8cc6A0E1D4936fA1F4B5AaE1cFeEE](http://etherscan.io/address/0x51f729D292f8cc6A0E1D4936fA1F4B5AaE1cFeEE)
 * Decentralized Oracle ETH-USDC: [0x905C1036C12DF0e1701629979D7305bBB35D802b](http://etherscan.io/address/0x905C1036C12DF0e1701629979D7305bBB35D802b)
 * Decentralized Oracle xBOND-ETH [0xb2bc8e996331ee37ddac7050acafbec6109dd429](http://etherscan.io/address/0xb2bc8e996331ee37ddac7050acafbec6109dd429)
+* PoolReward [0x145B9340D4Db4042350F51CfAE982a5004416867](http://etherscan.io/address/0x145B9340D4Db4042350F51CfAE982a5004416867)
+* xBond [0xa8f8dC37f3aB1F2357eC1B6345e02798b4124DCD](http://etherscan.io/address/0xa8f8dC37f3aB1F2357eC1B6345e02798b4124DCD)
+* Seigniorage Governor Alpha [0x59f83d677898f7E0D68ECb225395D41FB190cb35](http://etherscan.io/address/0x59f83d677898f7E0D68ECb225395D41FB190cb35)
+* Dollar Timelock [0xf4a4534a9A049E5B3B6701e71b276b8a11F09139](http://etherscan.io/address/0xf4a4534a9A049E5B3B6701e71b276b8a11F09139)
+
 * Liquidity Mining Reserve for future (Uniswap V3 and beyond) - Multisig: [0x01b6e2C30B27b3D2E15595E89F2115B139Eaf597](http://etherscan.io/address/0x01b6e2C30B27b3D2E15595E89F2115B139Eaf597)
 * Team: [0xf23A63b68671bc75E1e6644f2aBaCB0c1d8B5BB0](http://etherscan.io/address/0xf23A63b68671bc75E1e6644f2aBaCB0c1d8B5BB0)
 
