@@ -14,6 +14,4 @@ interface ICash {
     function totalSupply() external view returns (uint256);
     function rebase(uint256 epoch, int256 supplyDelta) external returns (uint256);
     function redeemedShare(address account) external view returns (uint256);
-
-    function mintCash(address account, uint256 amount) external returns (bool);
 }
