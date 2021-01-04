@@ -23,8 +23,6 @@ contract GovernorAlpha {
     // XXX: string public constant name = "Compound Governor Alpha";
     string public constant name = "Seigniorage Governor Alpha";
 
-    uint256 public quorumPercent;
-
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     // XXX: function quorumVotes() public pure returns (uint) { return 400000e18; } // 400,000 = 4% of Comp
     function quorumVotes() public view returns (uint) { return share.totalSupply() * quorumPercent / 100; } // 4% of Supply
@@ -129,6 +127,8 @@ contract GovernorAlpha {
     /// @notice The latest proposal for each proposer
     mapping (address => uint) public latestProposalIds;
 
+    uint256 public quorumPercent;
+
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
@@ -154,7 +154,7 @@ contract GovernorAlpha {
         timelock = TimelockInterface(timelock_);
         share = IShare(share_);
         guardian = guardian_;
-        quorumPercent = 50; // 50% initially
+        quorumPercent = 20; // 20% initially
     }
 
     function setQuorumPercent(uint256 percent) public {
