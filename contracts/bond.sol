@@ -1,13 +1,13 @@
 pragma solidity >=0.4.24;
 
-import "../interface/ICash.sol";
+import "./interface/ICash.sol";
 import "openzeppelin-eth/contracts/math/SafeMath.sol";
 import "openzeppelin-eth/contracts/ownership/Ownable.sol";
 import "openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-eth/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-eth/contracts/utils/ReentrancyGuard.sol";
 
-import "../lib/SafeMathInt.sol";
+import "./lib/SafeMathInt.sol";
 
 /*
  *  xBond ERC20
