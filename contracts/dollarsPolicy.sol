@@ -1,7 +1,7 @@
 pragma solidity >=0.4.24;
 
-import "../lib/SafeMathInt.sol";
-import "../lib/UInt256Lib.sol";
+import "./lib/SafeMathInt.sol";
+import "./lib/UInt256Lib.sol";
 import "./dollars.sol";
 
 /*
