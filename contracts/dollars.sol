@@ -572,12 +572,19 @@ contract Dollars is ERC20Detailed, Ownable {
         }
     }
 
+    function setTotalSupply(uint256 amount) external onlyOwner {
+        _totalSupply = amount;
+    }
+
     modifier updateAccount(address account) {
         uint256 owing = dividendsOwing(account);
         uint256 debt = debtOwing(account);
 
         if (owing > 0) {
             _unclaimedDividends = owing <= _unclaimedDividends ? _unclaimedDividends.sub(owing) : 0;
+            _dollarBalances[account] += owing;
+            _totalSupply = _totalSupply.add(owing);
+            emit Transfer(address(0), account, owing);
         }
 
         if (debt > 0) {
