@@ -1,11 +1,11 @@
 pragma solidity >=0.4.24;
 
-import "../interface/ICash.sol";
+import "./interface/ICash.sol";
 import "openzeppelin-eth/contracts/math/SafeMath.sol";
 import "openzeppelin-eth/contracts/ownership/Ownable.sol";
 import "openzeppelin-eth/contracts/utils/ReentrancyGuard.sol";
 
-import "../lib/SafeMathInt.sol";
+import "./lib/SafeMathInt.sol";
 
 contract stakingUSDx is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
