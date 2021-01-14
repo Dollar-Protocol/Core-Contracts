@@ -121,7 +121,7 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
         ethBondOracle = oracle_;
     }
 
-    function mint(address _who, uint256 _amount) validRecipient(who_) public nonReentrant {
+    function mint(address _who, uint256 _amount) validRecipient(_who) public nonReentrant {
         require(msg.sender == address(Dollars), "unauthorized");
 
         _bondBalances[_who] = _bondBalances[_who].add(_amount);
