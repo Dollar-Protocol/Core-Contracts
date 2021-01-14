@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-import "./interface/ICash.sol";
+import "../interface/ICash.sol";
 import "openzeppelin-eth/contracts/math/SafeMath.sol";
 import "openzeppelin-eth/contracts/ownership/Ownable.sol";
 import "openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol";
@@ -193,8 +193,8 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
         commitTimeStamp[msg.sender] = now;
         stakingStatus[msg.sender] = 2;
 
-        totalStaked -= balanceOf(msg.sender);
-        totalCommitted += balanceOf(msg.sender);
+        totalStaked = totalStaked.sub(balanceOf(msg.sender));
+        totalCommitted = totalCommitted.add(balanceOf(msg.sender));
         emit CommittedWithdraw(msg.sender, balanceOf(msg.sender));
     }
 
@@ -203,7 +203,7 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
         require(commitTimeStamp[msg.sender] + minimumCommitTime < now, "minimum commit time not met yet");
         stakingStatus[msg.sender] = 0;
 
-        totalCommitted -= balanceOf(msg.sender);
+        totalCommitted = totalCommitted.sub(balanceOf(msg.sender));
         emit Unstaked(msg.sender, balanceOf(msg.sender));
     }
 
@@ -219,7 +219,7 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
         require(stakingStatus[msg.sender] == 0, "can only stake if currently unstaked");
         stakingStatus[msg.sender] = 1;
 
-        totalStaked += balanceOf(msg.sender);
+        totalStaked = totalStaked.add(balanceOf(msg.sender));
         emit Staked(msg.sender, balanceOf(msg.sender));
     }
 
@@ -390,58 +390,6 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
     }
 
     /**
-     * @notice Delegates votes from signatory to `delegatee`
-     * @param delegatee The address to delegate votes to
-     * @param nonce The contract state required to match the signature
-     * @param expiry The time at which to expire the signature
-     * @param v The recovery byte of the signature
-     * @param r Half of the ECDSA signature pair
-     * @param s Half of the ECDSA signature pair
-     */
-    function delegateBySig(
-        address delegatee,
-        uint nonce,
-        uint expiry,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        external
-    {
-        bytes32 domainSeparator = keccak256(
-            abi.encode(
-                DOMAIN_TYPEHASH,
-                keccak256(bytes(name())),
-                getChainId(),
-                address(this)
-            )
-        );
-
-        bytes32 structHash = keccak256(
-            abi.encode(
-                DELEGATION_TYPEHASH,
-                delegatee,
-                nonce,
-                expiry
-            )
-        );
-
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                domainSeparator,
-                structHash
-            )
-        );
-
-        address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "SeigniorageShares::delegateBySig: invalid signature");
-        require(nonce == nonces2[signatory]++, "SeigniorageShares::delegateBySig: invalid nonce");
-        require(now <= expiry, "SeigniorageShares::delegateBySig: signature expired");
-        return _delegate(signatory, delegatee);
-    }
-
-    /**
      * @notice Gets the current votes balance for `account`
      * @param account The address to get votes balance
      * @return The number of current votes for `account`
@@ -555,9 +503,5 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
     function safe32(uint n, string memory errorMessage) internal pure returns (uint32) {
         require(n < 2**32, errorMessage);
         return uint32(n);
-    }
-
-    function getChainId() internal pure returns (uint) {
-        return 1;
     }
 }
