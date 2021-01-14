@@ -1,18 +1,18 @@
 pragma solidity >=0.4.24;
 
-import "./interface/ICash.sol";
+import "../interface/ICash.sol";
 import "openzeppelin-eth/contracts/math/SafeMath.sol";
 import "openzeppelin-eth/contracts/ownership/Ownable.sol";
 import "openzeppelin-eth/contracts/utils/ReentrancyGuard.sol";
 
-import "./lib/SafeMathInt.sol";
+import "../lib/SafeMathInt.sol";
 
 contract stakingUSDx is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeMathInt for int256;
 
     // eslint-ignore
-    ICash Dollars;
+    ICash public Dollars;
 
     struct Stake {
         uint256 lastDollarPoints;   // variable to keep track of pending payouts
@@ -29,6 +29,13 @@ contract stakingUSDx is Ownable, ReentrancyGuard {
     mapping (address => Stake) public userStake;
     uint256 public coolDownPeriodSeconds;                       // how long it takes for a user to get paid their money back
     uint256 public constant POINT_MULTIPLIER = 10 ** 18;
+    uint256 public totalCommitted;                              // value that tracks the total amount of USDx committed to unstake
+
+    modifier validRecipient(address to) {
+        require(to != address(0x0));
+        require(to != address(this));
+        _;
+    }
 
     function initialize(address owner_, address dollar_, address timelock_) public initializer {
         Ownable.initialize(owner_);
@@ -36,7 +43,7 @@ contract stakingUSDx is Ownable, ReentrancyGuard {
         Dollars = ICash(dollar_);
 
         timelock = timelock_;
-        stakingMinimumSeconds = 432000;                          // 432000 seconds = 5 days
+        stakingMinimumSeconds = 432000;                         // 432000 seconds = 5 days
         coolDownPeriodSeconds = 432000;                         // 5 days for getting out principal
     }
 
@@ -50,12 +57,14 @@ contract stakingUSDx is Ownable, ReentrancyGuard {
         coolDownPeriodSeconds = seconds_;
     }
 
+    // make sure to add USD to this contract during rebase
     function addRebaseFunds(uint256 newUsdAmount) external {
         require(msg.sender == address(Dollars), "unauthorized");
         totalDollarPoints += newUsdAmount.mul(POINT_MULTIPLIER).div(totalStaked);
     }
 
-    function stake(uint256 amount) external nonReentrant updateAccount(msg.sender) {
+    function stake(uint256 amount) external updateAccount(msg.sender) {
+        require(userStake[msg.sender].stakingStatus != 2, "cannot stake while committed");
         require(amount != 0, "invalid stake amount");
         require(amount <= Dollars.balanceOf(msg.sender), "insufficient balance");
         require(Dollars.transferFrom(msg.sender, address(this), amount), "staking failed");
@@ -66,26 +75,28 @@ contract stakingUSDx is Ownable, ReentrancyGuard {
         userStake[msg.sender].stakingStatus = 1;
     }
 
-    function commitUnstake() external nonReentrant updateAccount(msg.sender) {
+    function commitUnstake() external updateAccount(msg.sender) {
         require(userStake[msg.sender].stakingSeconds + stakingMinimumSeconds < now, "minimum time unmet");
         require(userStake[msg.sender].stakingStatus == 1, "user must be staked first");
 
         userStake[msg.sender].stakingStatus = 2;
         userStake[msg.sender].unstakingSeconds = now;
         totalStaked -= userStake[msg.sender].stakingAmount; // remove staked from pool for rewards
+        totalCommitted += userStake[msg.sender].stakingAmount;
     }
 
-    function unstake() external nonReentrant updateAccount(msg.sender) {
+    function unstake() external updateAccount(msg.sender) {
         require(userStake[msg.sender].stakingStatus == 2, "user must commit to unstaking first");
         require(userStake[msg.sender].unstakingSeconds + coolDownPeriodSeconds < now, "minimum time unmet");
 
         userStake[msg.sender].stakingStatus = 0;
         require(Dollars.transfer(msg.sender, userStake[msg.sender].stakingAmount), "unstaking failed");
+        totalCommitted -= userStake[msg.sender].stakingAmount;
 
         userStake[msg.sender].stakingAmount = 0;
     }
 
-    function pendingReward(address user_) public view returns (uint256) {
+    function pendingReward(address user_) validRecipient(user_) public view returns (uint256) {
         if (totalDollarPoints > userStake[user_].lastDollarPoints && userStake[user_].stakingStatus == 1) {
             uint256 newDividendPoints = totalDollarPoints.sub(userStake[user_].lastDollarPoints);
             uint256 owedDollars = (userStake[user_].stakingAmount).mul(newDividendPoints).div(POINT_MULTIPLIER);
@@ -96,7 +107,7 @@ contract stakingUSDx is Ownable, ReentrancyGuard {
         }
     }
 
-    function claimReward(address user_) public {
+    function claimReward(address user_) validRecipient(user_) public {
         uint256 reward = pendingReward(user_);
         if (reward > 0) require(Dollars.transfer(user_, reward), "claiming reward failed");
 
