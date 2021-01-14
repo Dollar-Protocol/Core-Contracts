@@ -565,9 +565,8 @@ contract Dollars is ERC20Detailed, Ownable {
         return true;
     }
 
-    function claimDividends(address account) external updateAccount(account) returns (uint256) {
-        uint256 owing = dividendsOwing(account);
-        return owing;
+    function claimDividends(address account) external updateAccount(account) returns (bool) {
+        return true;
     }
 
     function dividendsOwing(address account) public view returns (uint256) {
