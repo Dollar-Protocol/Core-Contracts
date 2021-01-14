@@ -1,13 +1,13 @@
 pragma solidity >=0.4.24;
 
-import "./interface/ICash.sol";
+import "../interface/ICash.sol";
 import "openzeppelin-eth/contracts/math/SafeMath.sol";
 import "openzeppelin-eth/contracts/ownership/Ownable.sol";
 import "openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-eth/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-eth/contracts/utils/ReentrancyGuard.sol";
 
-import "./lib/SafeMathInt.sol";
+import "../lib/SafeMathInt.sol";
 
 /*
  *  xBond ERC20
@@ -38,8 +38,9 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
 
     uint256 public constantUsdRebase;
     address public ethBondOracle;
+    address public timelock;
 
-    function initialize(address owner_, address dollar_)
+    function initialize(address owner_, address timelock_, address dollar_)
         public
         initializer
     {
@@ -47,6 +48,7 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
         Ownable.initialize(owner_);
         ReentrancyGuard.initialize();
         Dollars = ICash(dollar_);
+        timelock = timelock_;
 
         _totalSupply = INITIAL_BOND_SUPPLY;
         _bondBalances[owner_] = _totalSupply;
@@ -110,19 +112,16 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
         }
     }
 
-    function setClaimableUSD(uint256 _val) external onlyOwner {
-        claimableUSD = _val;
+    function setTimelock(address timelock_) validRecipient(timelock_) external onlyOwner {
+        timelock = timelock_;
     }
 
-    function setConstantClaimableUSD(uint256 _val) external onlyOwner {
-        constantUsdRebase = _val;
-    }
-
-    function setEthBondOarcle(address oracle_) external onlyOwner {
+    function setEthBondOracle(address oracle_) validRecipient(oracle_) external onlyOwner {
+        require(msg.sender == timelock);
         ethBondOracle = oracle_;
     }
 
-    function mint(address _who, uint256 _amount) public nonReentrant {
+    function mint(address _who, uint256 _amount) validRecipient(who_) public nonReentrant {
         require(msg.sender == address(Dollars), "unauthorized");
 
         _bondBalances[_who] = _bondBalances[_who].add(_amount);
@@ -130,11 +129,11 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
         emit Transfer(address(0x0), _who, _amount);
     }
 
-    function claimableProRataUSD(address _who) public view returns (uint256) {
+    function claimableProRataUSD(address _who) validRecipient(_who) public view returns (uint256) {
         return constantUsdRebase.mul(balanceOf(_who)).div(_totalSupply);
     }
 
-    function remove(address _who, uint256 _amount, uint256 _usdAmount) public nonReentrant {
+    function remove(address _who, uint256 _amount, uint256 _usdAmount) validRecipient(_who) public nonReentrant {
         require(msg.sender == address(Dollars), "unauthorized");
         require(_usdAmount <= claimableUSD, "usd amount must be less than claimable usd");
         require(lastUserRebase[_who] != lastRebase, "user already claimed once - please wait until next rebase");
@@ -258,7 +257,7 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
     }
 
     modifier updateAccount(address account) {
-        Dollars.claimDividends(account);
+        require(Dollars.claimDividends(account));
         ethBondOracle.call(abi.encodeWithSignature('update()'));
         _;
     }
