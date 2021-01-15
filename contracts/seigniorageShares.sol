@@ -8,7 +8,7 @@ import "openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol";
 import "../lib/SafeMathInt.sol";
 
 interface IShareHelper {
-    function getChainId() external returns (uint);
+    function getChainId() external pure returns (uint);
 }
 
 /*
