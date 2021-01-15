@@ -7,7 +7,7 @@ import "openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-eth/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-eth/contracts/utils/ReentrancyGuard.sol";
 
-import "./lib/SafeMathInt.sol";
+import "../lib/SafeMathInt.sol";
 
 /*
  *  xBond ERC20
@@ -116,7 +116,7 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
         timelock = timelock_;
     }
 
-    function setEthBondOracle(address oracle_) validRecipient(oracle_) external onlyOwner {
+    function setEthBondOracle(address oracle_) validRecipient(oracle_) external {
         require(msg.sender == timelock);
         ethBondOracle = oracle_;
     }
@@ -147,10 +147,6 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
 
         lastUserRebase[_who] = lastRebase;
         emit Transfer(_who, address(0x0), _amount);
-    }
-
-    function setSupply(uint256 _amount) external onlyOwner {
-        _totalSupply = _amount;
     }
 
     /**
