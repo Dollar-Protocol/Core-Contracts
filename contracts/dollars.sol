@@ -1,8 +1,8 @@
 pragma solidity >=0.4.24;
 
-import "../lib/UInt256Lib.sol";
-import "../lib/SafeMathInt.sol";
-import "../interface/ISeigniorageShares.sol";
+import "./lib/UInt256Lib.sol";
+import "./lib/SafeMathInt.sol";
+import "./interface/ISeigniorageShares.sol";
 import "openzeppelin-eth/contracts/math/SafeMath.sol";
 import "openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-eth/contracts/ownership/Ownable.sol";
