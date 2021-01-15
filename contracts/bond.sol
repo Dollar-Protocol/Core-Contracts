@@ -258,7 +258,7 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
 
     modifier updateAccount(address account) {
         Dollars.claimDividends(account);
-        ethBondOracle.call(abi.encodeWithSignature('update()'));
+        (bool success, ) = ethBondOracle.call(abi.encodeWithSignature('update()'));
         _;
     }
 }
