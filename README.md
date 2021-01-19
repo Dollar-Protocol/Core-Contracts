@@ -1,8 +1,15 @@
-![](https://github.com/Dollar-Protocol/Core-Contracts/blob/master/assets/pair.svg)
-
 # Dollar Protocol
 
+<p align="center">
+  <img alt="DP Logo" src="./main/assets/pairNew.svg" width="440">
+</p>
+
 A better elastic money supply protocol, powered by $SHARE, $USDx and $xBOND.
+
+[![Home Page](https://img.shields.io/badge/homepage-view-red.svg)](https://dollarprotocol.com/)
+[![Chat on Telegram](https://img.shields.io/badge/Chat%20on-Telegram-brightgreen.svg)](https://t.me/dollarprotocol) 
+[![Email](https://img.shields.io/badge/send-email-blue.svg)](mailto:info@dollarprotocol.ccom)
+[![Twitter Follow](https://img.shields.io/twitter/follow/dollarprotocol?label=follow%20%40dollarprotocol&style=social)](https://twitter.com/dollarprotocol)
 
 # Main Contracts
 * dollars.sol
