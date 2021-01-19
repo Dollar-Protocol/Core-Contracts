@@ -2,9 +2,8 @@
 
 <p align="center">
   <img alt="DP Logo" src="./assets/pairNew.svg" width="440">
+  A better elastic money supply protocol, powered by $SHARE, $USDx and $xBOND.
 </p>
-
-A better elastic money supply protocol, powered by $SHARE, $USDx and $xBOND.
 
 [![Home Page](https://img.shields.io/badge/homepage-view-red.svg)](https://dollarprotocol.com/)
 [![Chat on Telegram](https://img.shields.io/badge/Chat%20on-Telegram-brightgreen.svg)](https://t.me/dollarprotocol) 
