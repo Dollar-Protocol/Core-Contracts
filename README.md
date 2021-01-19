@@ -2,6 +2,9 @@
 
 <p align="center">
   <img alt="DP Logo" src="./assets/pairNew.svg" width="440">
+</p>
+
+<p align="center">
   A better elastic money supply protocol, powered by $SHARE, $USDx and $xBOND.
 </p>
 
