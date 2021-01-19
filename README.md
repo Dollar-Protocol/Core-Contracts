@@ -1,7 +1,7 @@
 # Dollar Protocol
 
 <p align="center">
-  <img alt="DP Logo" src="./main/assets/pairNew.svg" width="440">
+  <img alt="DP Logo" src="./assets/pairNew.svg" width="440">
 </p>
 
 A better elastic money supply protocol, powered by $SHARE, $USDx and $xBOND.
