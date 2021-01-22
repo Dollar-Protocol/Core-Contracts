@@ -60,7 +60,7 @@ contract stakingUSDx is Ownable, ReentrancyGuard {
     // make sure to add USD to this contract during rebase
     function addRebaseFunds(uint256 newUsdAmount) external {
         require(msg.sender == address(Dollars), "unauthorized");
-        totalDollarPoints += newUsdAmount.mul(POINT_MULTIPLIER).div(totalStaked);
+        totalDollarPoints = totalDollarPoints.add(newUsdAmount.mul(POINT_MULTIPLIER).div(totalStaked));
     }
 
     function stake(uint256 amount) external updateAccount(msg.sender) {
@@ -70,28 +70,28 @@ contract stakingUSDx is Ownable, ReentrancyGuard {
         require(Dollars.transferFrom(msg.sender, address(this), amount), "staking failed");
 
         userStake[msg.sender].stakingSeconds = now;
-        userStake[msg.sender].stakingAmount += amount;
-        totalStaked += amount;
+        userStake[msg.sender].stakingAmount = userStake[msg.sender].stakingAmount.add(amount);
+        totalStaked = totalStaked.add(amount);
         userStake[msg.sender].stakingStatus = 1;
     }
 
     function commitUnstake() external updateAccount(msg.sender) {
-        require(userStake[msg.sender].stakingSeconds + stakingMinimumSeconds < now, "minimum time unmet");
+        require(userStake[msg.sender].stakingSeconds.add(stakingMinimumSeconds) < now, "minimum time unmet");
         require(userStake[msg.sender].stakingStatus == 1, "user must be staked first");
 
         userStake[msg.sender].stakingStatus = 2;
         userStake[msg.sender].unstakingSeconds = now;
-        totalStaked -= userStake[msg.sender].stakingAmount; // remove staked from pool for rewards
-        totalCommitted += userStake[msg.sender].stakingAmount;
+        totalStaked = totalStaked.sub(userStake[msg.sender].stakingAmount); // remove staked from pool for rewards
+        totalCommitted = totalCommitted.add(userStake[msg.sender].stakingAmount);
     }
 
     function unstake() external updateAccount(msg.sender) {
         require(userStake[msg.sender].stakingStatus == 2, "user must commit to unstaking first");
-        require(userStake[msg.sender].unstakingSeconds + coolDownPeriodSeconds < now, "minimum time unmet");
+        require(userStake[msg.sender].unstakingSeconds.add(coolDownPeriodSeconds) < now, "minimum time unmet");
 
         userStake[msg.sender].stakingStatus = 0;
         require(Dollars.transfer(msg.sender, userStake[msg.sender].stakingAmount), "unstaking failed");
-        totalCommitted -= userStake[msg.sender].stakingAmount;
+        totalCommitted = totalCommitted.sub(userStake[msg.sender].stakingAmount);
 
         userStake[msg.sender].stakingAmount = 0;
     }
