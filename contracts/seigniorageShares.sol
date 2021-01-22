@@ -250,8 +250,8 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
         _moveDelegates(_delegates2[msg.sender], _delegates2[to], value);
 
         // add to staking if true
-        if (stakingStatus[to] == 1) totalStaked += value;
-        else if (stakingStatus[to] == 2) totalCommitted += value;
+        if (stakingStatus[to] == 1) totalStaked = totalStaked.add(value);
+        else if (stakingStatus[to] == 2) totalCommitted = totalCommitted.add(value);
 
         return true;
     }
@@ -294,8 +294,8 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
 
         _moveDelegates(_delegates2[from], _delegates2[to], value);
 
-        if (stakingStatus[to] == 1) totalStaked += value;
-        else if (stakingStatus[to] == 2) totalCommitted += value;
+        if (stakingStatus[to] == 1) totalStaked = totalStaked.add(value);
+        else if (stakingStatus[to] == 2) totalCommitted = totalCommitted.add(value);
 
         return true;
     }
