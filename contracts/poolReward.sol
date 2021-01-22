@@ -76,17 +76,8 @@ contract PoolReward is Ownable, ReentrancyGuard {
         external
         onlyOwner
     {
+        require(timelock_ != address(0x0));
         timelock = timelock_;
-    }
-
-    function setPoolDollarPoints(uint256 _poolID, uint256 _val) external onlyOwner {
-        PoolInfo storage pool = poolInfo[_poolID];
-        pool.totalDollarPoints = _val;
-    }
-
-    function setUserDollarPoints(uint256 _poolID, address _user, uint256 _val) external onlyOwner {
-        UserInfo storage user = userInfo[_poolID][_user];
-        user.lastDollarPoints = _val;
     }
 
     function initialize(address owner_, address dollar_)
@@ -100,6 +91,7 @@ contract PoolReward is Ownable, ReentrancyGuard {
 
     // add pool -> do not add same pool more than once
     function addPool(uint256 _allocPoint, IERC20 _lpToken) external returns (bool) {
+        require(_lpToken != address(0x0));
         require(msg.sender == timelock, "unauthorized");
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
 
@@ -115,7 +107,7 @@ contract PoolReward is Ownable, ReentrancyGuard {
 
     // change reward ratio distribution
     function setPool(uint256 _poolID, uint256 _allocPoint) external returns (bool) {
-        require(msg.sender == timelock, "unauthorized");
+        require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC), "unauthorized");
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_poolID].allocPoint).add(_allocPoint);
         poolInfo[_poolID].allocPoint = _allocPoint;
 
@@ -128,9 +120,6 @@ contract PoolReward is Ownable, ReentrancyGuard {
         UserInfo storage user = userInfo[_poolID][_user];
 
         uint256 userStake = user.amount;
-        uint256 poolAllocPoint = pool.allocPoint;
-
-        uint256 dollarShareBalance = pool.totalDollarPoints.sub(user.lastDollarPoints);
 
         if (pool.totalDollarPoints > user.lastDollarPoints) {
             uint256 newDividendPoints = pool.totalDollarPoints.sub(user.lastDollarPoints);
@@ -188,11 +177,11 @@ contract PoolReward is Ownable, ReentrancyGuard {
         claimRewardInternal(_poolID, msg.sender);
 
         uint256 _amount = userInfo[_poolID][msg.sender].amount;
-        require(poolInfo[_poolID].lpToken.transfer(msg.sender, _amount), "LP return transfer failed");
 
         resetUser(_poolID, msg.sender);
-
         lastUserAction[_poolID][msg.sender] = now;
+
+        require(poolInfo[_poolID].lpToken.transfer(msg.sender, _amount), "LP return transfer failed");
 
         return true;
     }
@@ -200,7 +189,6 @@ contract PoolReward is Ownable, ReentrancyGuard {
     // internal function for resetting user share / pool share, and user LP balance
     function resetUser(uint256 _poolID, address _user) internal {
         UserInfo storage user = userInfo[_poolID][_user];
-        PoolInfo storage pool = poolInfo[_poolID];
 
         user.amount = 0;
         user.shareBalance = 0;
@@ -220,6 +208,7 @@ contract PoolReward is Ownable, ReentrancyGuard {
     }
 
     function claimReward(uint256 _poolID, address _user) public nonReentrant returns (bool) {
+        require(_user != address(0x0));
         UserInfo storage user = userInfo[_poolID][_user];
         PoolInfo storage pool = poolInfo[_poolID];
 

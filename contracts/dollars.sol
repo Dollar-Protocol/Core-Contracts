@@ -25,6 +25,10 @@ interface IPool {
     function setLastRebase(uint256 newUsdAmount) external;
 }
 
+interface IStake {
+    function addRebaseFunds(uint256 newUsdAmount) external;    
+}
+
 /*
  *  Dollar ERC20
  */
@@ -57,7 +61,7 @@ contract Dollars is ERC20Detailed, Ownable {
         _;
     }
 
-    uint256 private deprecatedVariable1;
+    uint256 public stakeToShareRatio;
 
     modifier validRecipient(address to) {
         require(to != address(0x0));
@@ -113,8 +117,8 @@ contract Dollars is ERC20Detailed, Ownable {
         _;
     }
 
-    address dollarReserve;
-    event LogDollarReserveUpdated(address dollarReserve);
+    address public stakeAddress;
+    event LogDollarReserveUpdated(address deprecated);
 
     mapping(address => bool) public debased; // mapping if an address has deleted 50% of their dollar tokens
 
@@ -180,8 +184,7 @@ contract Dollars is ERC20Detailed, Ownable {
     function setBondShareRatio(uint256 val_)
         external
     {
-        require(msg.sender == timelock);
-        require(val_ != 0);
+        require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC));
         require(val_ <= 100);
 
         bondToShareRatio = val_;   
@@ -191,15 +194,27 @@ contract Dollars is ERC20Detailed, Ownable {
     function setLpToShareRatio(uint256 val_)
         external
     {
-        require(msg.sender == timelock);
-        require(val_ != 0);
+        require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC));
         require(val_ <= 100);
 
         lpToShareRatio = val_;
     }
 
+    function setStakeToShareRatio(uint256 val_)
+        external
+    {
+        require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC));
+        require(val_ <= 100);
+
+        stakeToShareRatio = val_;
+    }
+
     function setBondAddress(address bond_) external onlyOwner {
         bondAddress = bond_;
+    }
+
+    function setStakeAddress(address stake_) external onlyOwner {
+        stakeAddress = stake_;
     }
 
     function setPoolAddress(address pool_) external onlyOwner {
@@ -319,6 +334,7 @@ contract Dollars is ERC20Detailed, Ownable {
         whenRebaseNotPaused
         returns (uint256)
     {
+        require(!reEntrancyRebaseMutex, "dp::reentrancy");
         reEntrancyRebaseMutex = true;
 
         if (supplyDelta == 0) {
@@ -345,6 +361,7 @@ contract Dollars is ERC20Detailed, Ownable {
         } else { // > 0
             uint256 dollarsToBonds = uint256(supplyDelta).mul(bondToShareRatio).div(100);
             uint256 dollarsToLPs = uint256(supplyDelta).sub(dollarsToBonds).mul(lpToShareRatio).div(100);
+            uint256 dollarsToStake = uint256(supplyDelta).sub(dollarsToBonds).sub(dollarsToLPs).mul(stakeToShareRatio).div(100);
             
             IPool(poolRewardAddress).setLastRebase(dollarsToLPs);
             _dollarBalances[poolRewardAddress] = _dollarBalances[poolRewardAddress].add(dollarsToLPs);
@@ -353,10 +370,14 @@ contract Dollars is ERC20Detailed, Ownable {
             _dollarBalances[address(this)] = _dollarBalances[address(this)].add(dollarsToBonds);
             IBond(bondAddress).setLastRebase(dollarsToBonds);
             emit Transfer(address(0x0), address(this), dollarsToBonds);
-            
-            _totalSupply = _totalSupply.add(dollarsToBonds).add(dollarsToLPs);
 
-            disburse(uint256(supplyDelta).sub(dollarsToBonds).sub(dollarsToLPs));
+            _dollarBalances[stakeAddress] = _dollarBalances[stakeAddress].add(dollarsToStake);
+            IStake(stakeAddress).addRebaseFunds(dollarsToStake);
+            emit Transfer(address(0x0), stakeAddress, dollarsToStake);
+            
+            _totalSupply = _totalSupply.add(dollarsToBonds).add(dollarsToLPs).add(dollarsToStake);
+
+            disburse(uint256(supplyDelta).sub(dollarsToBonds).sub(dollarsToLPs).sub(dollarsToStake));
 
             emit LogRebase(epoch, _totalSupply);
             lastRebasePositive = true;
@@ -441,11 +462,10 @@ contract Dollars is ERC20Detailed, Ownable {
     {
         require(!reEntrancyRebaseMutex, "dp::reentrancy");
 
-        if (_dollarBalances[msg.sender] > 0) {
-            _dollarBalances[msg.sender] = _dollarBalances[msg.sender].sub(value);
-            _dollarBalances[to] = _dollarBalances[to].add(value);
-            emit Transfer(msg.sender, to, value);
-        }
+        _dollarBalances[msg.sender] = _dollarBalances[msg.sender].sub(value);
+        _dollarBalances[to] = _dollarBalances[to].add(value);
+        emit Transfer(msg.sender, to, value);
+
         return true;
     }
 
@@ -478,13 +498,11 @@ contract Dollars is ERC20Detailed, Ownable {
     {
         require(!reEntrancyRebaseMutex, "dp::reentrancy");
 
-        if (_dollarBalances[from] > 0) {
-            _allowedDollars[from][msg.sender] = _allowedDollars[from][msg.sender].sub(value);
+        _allowedDollars[from][msg.sender] = _allowedDollars[from][msg.sender].sub(value);
 
-            _dollarBalances[from] = _dollarBalances[from].sub(value);
-            _dollarBalances[to] = _dollarBalances[to].add(value);
-            emit Transfer(from, to, value);
-        }
+        _dollarBalances[from] = _dollarBalances[from].sub(value);
+        _dollarBalances[to] = _dollarBalances[to].add(value);
+        emit Transfer(from, to, value);
 
         return true;
     }
@@ -547,9 +565,8 @@ contract Dollars is ERC20Detailed, Ownable {
         return true;
     }
 
-    function claimDividends(address account) external updateAccount(account) returns (uint256) {
-        uint256 owing = dividendsOwing(account);
-        return owing;
+    function claimDividends(address account) external updateAccount(account) returns (bool) {
+        return true;
     }
 
     function dividendsOwing(address account) public view returns (uint256) {
@@ -578,7 +595,7 @@ contract Dollars is ERC20Detailed, Ownable {
 
         if (owing > 0) {
             _unclaimedDividends = owing <= _unclaimedDividends ? _unclaimedDividends.sub(owing) : 0;
-            _dollarBalances[account] += owing;
+            _dollarBalances[account] = _dollarBalances[account].add(owing);
             _totalSupply = _totalSupply.add(owing);
             emit Transfer(address(0), account, owing);
         }
@@ -586,10 +603,10 @@ contract Dollars is ERC20Detailed, Ownable {
         if (debt > 0) {
             _unclaimedDebt = debt <= _unclaimedDebt ? _unclaimedDebt.sub(debt) : 0;
 
-            if (_dollarBalances[account] >= debt && account != address(this) && account != poolRewardAddress) {
+            if (_dollarBalances[account] >= debt && account != address(this) && account != poolRewardAddress && account != stakeAddress) {
                 debt = debt <= _dollarBalances[account] ? debt : _dollarBalances[account];
 
-                _dollarBalances[account] -= debt;
+                _dollarBalances[account] = _dollarBalances[account].sub(debt);
                 _totalSupply = _totalSupply.sub(debt);
                 emit Transfer(account, address(0), debt);
             }

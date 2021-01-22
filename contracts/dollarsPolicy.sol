@@ -94,6 +94,7 @@ contract DollarsPolicy is Ownable {
         external
         onlyOwner
     {
+        require(timelock_ != address(0x0));
         timelock = timelock_;
     }
 
@@ -105,8 +106,8 @@ contract DollarsPolicy is Ownable {
     }
 
     function rebase() external onlyOrchestrator {
-        require(inRebaseWindow(), "OUTISDE_REBASE");
-        require(initializedOracle == true, 'ORACLE_NOT_INITIALIZED');
+        require(inRebaseWindow(), "OUTSIDE_REBASE");
+        require(initializedOracle, 'ORACLE_NOT_INITIALIZED');
 
         require(lastRebaseTimestampSec.add(minRebaseTimeIntervalSec) < now, "MIN_TIME_NOT_MET");
 
@@ -216,18 +217,22 @@ contract DollarsPolicy is Ownable {
     }
 
     function setSharePerUsdOracle(address sharesPerUsdOracleAddress) external onlyOwner {
+        require(sharesPerUsdOracle != address(0x0));
         sharesPerUsdOracle = IDecentralizedOracle(sharesPerUsdOracleAddress);
     }
 
     function setUSDxPerUsdcOracle(address usdxPerUsdcOracleAddress) external onlyOwner {
+        require(usdxPerUsdcOracleAddress != address(0x0));
         usdxPerUsdcOracle = IDecentralizedOracle(usdxPerUsdcOracleAddress);
     }
 
     function setEthPerUsdOracle(address ethPerUsdOracleAddress) external onlyOwner {
+        require(ethPerUsdOracleAddress != address(0x0));
         ethPerUsdOracle = IDecentralizedOracle(ethPerUsdOracleAddress);
     }
 
     function setEthPerUsdcOracle(address ethPerUsdcOracleAddress) external onlyOwner {
+        require(ethPerUsdcOracleAddress != address(0x0));
         ethPerUsdcOracle = IDecentralizedOracle(ethPerUsdcOracleAddress);
     }
 
@@ -243,8 +248,8 @@ contract DollarsPolicy is Ownable {
         uint256 rebaseWindowOffsetSec_,
         uint256 rebaseWindowLengthSec_)
         external
-        onlyOwner
     {
+        require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC));
         require(minRebaseTimeIntervalSec_ > 0);
         require(rebaseWindowOffsetSec_ < minRebaseTimeIntervalSec_);
 
@@ -253,11 +258,14 @@ contract DollarsPolicy is Ownable {
         rebaseWindowLengthSec = rebaseWindowLengthSec_;
     }
 
-    function initialize(address owner_, Dollars dollars_)
+    function initialize(address owner_, address wethAddress_, address shareAddress_, address orchestrator_, Dollars dollars_)
         public
         initializer
     {
         Ownable.initialize(owner_);
+        orchestrator = orchestrator_;
+        WETH_ADDRESS = wethAddress_;
+        SHARE_ADDRESS = shareAddress_;
 
         deviationThreshold = 5 * 10 ** (DECIMALS-2);
 

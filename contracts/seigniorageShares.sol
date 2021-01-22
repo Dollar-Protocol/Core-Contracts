@@ -7,6 +7,10 @@ import "openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol";
 
 import "../lib/SafeMathInt.sol";
 
+interface IShareHelper {
+    function getChainId() external pure returns (uint);
+}
+
 /*
  *  SeigniorageShares ERC20
  */
@@ -193,8 +197,8 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
         commitTimeStamp[msg.sender] = now;
         stakingStatus[msg.sender] = 2;
 
-        totalStaked -= balanceOf(msg.sender);
-        totalCommitted += balanceOf(msg.sender);
+        totalStaked = totalStaked.sub(balanceOf(msg.sender));
+        totalCommitted = totalCommitted.add(balanceOf(msg.sender));
         emit CommittedWithdraw(msg.sender, balanceOf(msg.sender));
     }
 
@@ -203,7 +207,7 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
         require(commitTimeStamp[msg.sender] + minimumCommitTime < now, "minimum commit time not met yet");
         stakingStatus[msg.sender] = 0;
 
-        totalCommitted -= balanceOf(msg.sender);
+        totalCommitted = totalCommitted.sub(balanceOf(msg.sender));
         emit Unstaked(msg.sender, balanceOf(msg.sender));
     }
 
@@ -219,7 +223,7 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
         require(stakingStatus[msg.sender] == 0, "can only stake if currently unstaked");
         stakingStatus[msg.sender] = 1;
 
-        totalStaked += balanceOf(msg.sender);
+        totalStaked = totalStaked.add(balanceOf(msg.sender));
         emit Staked(msg.sender, balanceOf(msg.sender));
     }
 
@@ -246,8 +250,8 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
         _moveDelegates(_delegates2[msg.sender], _delegates2[to], value);
 
         // add to staking if true
-        if (stakingStatus[to] == 1) totalStaked += value;
-        else if (stakingStatus[to] == 2) totalCommitted += value;
+        if (stakingStatus[to] == 1) totalStaked = totalStaked.add(value);
+        else if (stakingStatus[to] == 2) totalCommitted = totalCommitted.add(value);
 
         return true;
     }
@@ -290,8 +294,8 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
 
         _moveDelegates(_delegates2[from], _delegates2[to], value);
 
-        if (stakingStatus[to] == 1) totalStaked += value;
-        else if (stakingStatus[to] == 2) totalCommitted += value;
+        if (stakingStatus[to] == 1) totalStaked = totalStaked.add(value);
+        else if (stakingStatus[to] == 2) totalCommitted = totalCommitted.add(value);
 
         return true;
     }
@@ -389,7 +393,7 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
         return _delegate(msg.sender, delegatee);
     }
 
-    /**
+/**
      * @notice Delegates votes from signatory to `delegatee`
      * @param delegatee The address to delegate votes to
      * @param nonce The contract state required to match the signature
@@ -557,7 +561,7 @@ contract SeigniorageShares is ERC20Detailed, Ownable {
         return uint32(n);
     }
 
-    function getChainId() internal pure returns (uint) {
-        return 1;
+    function getChainId() public pure returns (uint) {
+        return IShareHelper(address(0x1Cb015194edB31FD0e7Fa7a41AfC3a6A42e451F6)).getChainId();
     }
 }
