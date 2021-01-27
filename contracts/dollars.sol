@@ -14,6 +14,7 @@ interface IDollarPolicy {
 
 interface IBond {
     function mint(address _who, uint256 _amount) external;
+    function rebond(address _who, uint256 _amount, uint256 _usdAmount) external;
     function remove(address _who, uint256 _amount, uint256 _usdAmount) external;
     function balanceOf(address who) external view returns (uint256);
     function totalSupply() external view returns (uint256);
@@ -99,7 +100,7 @@ contract Dollars is ERC20Detailed, Ownable {
 
     IDollarPolicy DollarPolicy;
     uint256 public rebaseRewardUSDx;
-    uint256 public deprecatedVariable3;
+    uint256 public debaseBoolean;   // 1 is true, 0 is false
     uint256 public lpToShareRatio;
 
     uint256 public minimumBonusThreshold;
@@ -148,6 +149,9 @@ contract Dollars is ERC20Detailed, Ownable {
 
     string private _symbol;
 
+    mapping(address => bool) public debaseWhitelist; // addresses that are true will not be debased
+    event LogDebaseWhitelist(address user, bool value);
+
     /**
      * @param monetaryPolicy_ The address of the monetary policy contract to use for authentication.
      */
@@ -158,6 +162,12 @@ contract Dollars is ERC20Detailed, Ownable {
         monetaryPolicy = monetaryPolicy_;
         DollarPolicy = IDollarPolicy(monetaryPolicy_);
         emit LogMonetaryPolicyUpdated(monetaryPolicy_);
+    }
+
+    function setDebaseWhitelist(address user, bool val) {
+        require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC));
+        debaseWhitelist[user] = val;
+        emit LogDebaseWhitelist(user, val);
     }
 
     function changeSymbol(string memory symbol) public {
@@ -246,7 +256,7 @@ contract Dollars is ERC20Detailed, Ownable {
         reEntrancyMutex = false;
     }
 
-    function unbondMax() updateAccount(msg.sender) external {
+    function unbondMax(bool rebond) updateAccount(msg.sender) external {
         require(!reEntrancyMutex, "dp::reentrancy");
         reEntrancyMutex = true;
 
@@ -259,12 +269,16 @@ contract Dollars is ERC20Detailed, Ownable {
 
         require(IBond(bondAddress).balanceOf(msg.sender) >= bondsToBurn, "insufficient bond balance");
 
-        IBond(bondAddress).remove(msg.sender, bondsToBurn, dollarRedeemedAmount);
+        if (rebond) {
+            IBond(bondAddress).rebond(msg.sender, bondsToBurn, dollarRedeemedAmount);
+        } else {
+            IBond(bondAddress).remove(msg.sender, bondsToBurn, dollarRedeemedAmount);
 
-        _dollarBalances[msg.sender] = _dollarBalances[msg.sender].add(dollarRedeemedAmount);
-        _dollarBalances[address(this)] = _dollarBalances[address(this)].sub(dollarRedeemedAmount);
+            _dollarBalances[msg.sender] = _dollarBalances[msg.sender].add(dollarRedeemedAmount);
+            _dollarBalances[address(this)] = _dollarBalances[address(this)].sub(dollarRedeemedAmount);
 
-        emit Transfer(address(this), msg.sender, dollarRedeemedAmount);
+            emit Transfer(address(this), msg.sender, dollarRedeemedAmount);
+        }
 
         reEntrancyMutex = false;
     }
@@ -298,8 +312,8 @@ contract Dollars is ERC20Detailed, Ownable {
 
     function setTenPercentCap(bool _val)
         external
-        onlyOwner
     {
+        require(msg.sender == timelock);
         tenPercentCap = _val;
     }
 
@@ -309,17 +323,25 @@ contract Dollars is ERC20Detailed, Ownable {
      */
     function setRebasePaused(bool paused)
         external
-        onlyOwner
     {
+        require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC));
         rebasePaused = paused;
         emit LogRebasePaused(paused);
+    }
+
+    function setDebaseBoolean(uint256 val_)
+        external
+    {
+        require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC));
+        require(val_ <= 1, "value must be 0 or 1");
+        debaseBoolean = val_;
     }
 
     function syncUniswapV2()
         external
     {
         for (uint256 i = 0; i < uniSyncPairs.length; i++) {
-            uniSyncPairs[i].call(abi.encodeWithSignature('sync()'));
+            (bool success, ) = uniSyncPairs[i].call(abi.encodeWithSignature('sync()'));
         }
     }
 
@@ -332,6 +354,7 @@ contract Dollars is ERC20Detailed, Ownable {
         external
         onlyMonetaryPolicy
         whenRebaseNotPaused
+        updateAccount(tx.origin)
         returns (uint256)
     {
         require(!reEntrancyRebaseMutex, "dp::reentrancy");
@@ -350,34 +373,11 @@ contract Dollars is ERC20Detailed, Ownable {
             IPool(poolRewardAddress).setLastRebase(0);
             IBond(bondAddress).setLastRebase(0);
 
-            uint256 dollarsToDelete = uint256(supplyDelta.abs());
-            if (dollarsToDelete > _totalSupply.div(10) && tenPercentCap) { // maximum contraction is 10% of the total USD Supply
-                dollarsToDelete = _totalSupply.div(10);
+            if (debaseBoolean == 1) {
+                negativeRebaseHelper(epoch, supplyDelta);
             }
-
-            _totalDebtPoints = _totalDebtPoints.add(dollarsToDelete.mul(POINT_MULTIPLIER).div(_totalSupply));
-            _unclaimedDebt = _unclaimedDebt.add(dollarsToDelete);
-            emit LogContraction(epoch, dollarsToDelete);
         } else { // > 0
-            uint256 dollarsToBonds = uint256(supplyDelta).mul(bondToShareRatio).div(100);
-            uint256 dollarsToLPs = uint256(supplyDelta).sub(dollarsToBonds).mul(lpToShareRatio).div(100);
-            uint256 dollarsToStake = uint256(supplyDelta).sub(dollarsToBonds).sub(dollarsToLPs).mul(stakeToShareRatio).div(100);
-            
-            IPool(poolRewardAddress).setLastRebase(dollarsToLPs);
-            _dollarBalances[poolRewardAddress] = _dollarBalances[poolRewardAddress].add(dollarsToLPs);
-            emit Transfer(address(0x0), poolRewardAddress, dollarsToLPs);
-
-            _dollarBalances[address(this)] = _dollarBalances[address(this)].add(dollarsToBonds);
-            IBond(bondAddress).setLastRebase(dollarsToBonds);
-            emit Transfer(address(0x0), address(this), dollarsToBonds);
-
-            _dollarBalances[stakeAddress] = _dollarBalances[stakeAddress].add(dollarsToStake);
-            IStake(stakeAddress).addRebaseFunds(dollarsToStake);
-            emit Transfer(address(0x0), stakeAddress, dollarsToStake);
-            
-            _totalSupply = _totalSupply.add(dollarsToBonds).add(dollarsToLPs).add(dollarsToStake);
-
-            disburse(uint256(supplyDelta).sub(dollarsToBonds).sub(dollarsToLPs).sub(dollarsToStake));
+            positiveRebaseHelper(supplyDelta);
 
             emit LogRebase(epoch, _totalSupply);
             lastRebasePositive = true;
@@ -389,7 +389,7 @@ contract Dollars is ERC20Detailed, Ownable {
         }
 
         for (uint256 i = 0; i < uniSyncPairs.length; i++) {
-            uniSyncPairs[i].call(abi.encodeWithSignature('sync()'));
+            (bool success, ) = uniSyncPairs[i].call(abi.encodeWithSignature('sync()'));
         }
 
         _dollarBalances[tx.origin] = _dollarBalances[tx.origin].add(rebaseRewardUSDx);
@@ -398,6 +398,39 @@ contract Dollars is ERC20Detailed, Ownable {
 
         reEntrancyRebaseMutex = false;
         return _totalSupply;
+    }
+
+    function negativeRebaseHelper(uint256 epoch, int256 supplyDelta) internal {
+        uint256 dollarsToDelete = uint256(supplyDelta.abs());
+        if (dollarsToDelete > _totalSupply.div(10) && tenPercentCap) { // maximum contraction is 10% of the total USD Supply
+            dollarsToDelete = _totalSupply.div(10);
+        }
+
+        _totalDebtPoints = _totalDebtPoints.add(dollarsToDelete.mul(POINT_MULTIPLIER).div(_totalSupply));
+        _unclaimedDebt = _unclaimedDebt.add(dollarsToDelete);
+        emit LogContraction(epoch, dollarsToDelete);
+    }
+
+    function positiveRebaseHelper(int256 supplyDelta) internal {
+        uint256 dollarsToBonds = uint256(supplyDelta).mul(bondToShareRatio).div(100);
+        uint256 dollarsToLPs = uint256(supplyDelta).sub(dollarsToBonds).mul(lpToShareRatio).div(100);
+        uint256 dollarsToStake = uint256(supplyDelta).sub(dollarsToBonds).sub(dollarsToLPs).mul(stakeToShareRatio).div(100);
+        
+        IPool(poolRewardAddress).setLastRebase(dollarsToLPs);
+        _dollarBalances[poolRewardAddress] = _dollarBalances[poolRewardAddress].add(dollarsToLPs);
+        emit Transfer(address(0x0), poolRewardAddress, dollarsToLPs);
+
+        _dollarBalances[address(this)] = _dollarBalances[address(this)].add(dollarsToBonds);
+        IBond(bondAddress).setLastRebase(dollarsToBonds);
+        emit Transfer(address(0x0), address(this), dollarsToBonds);
+
+        _dollarBalances[stakeAddress] = _dollarBalances[stakeAddress].add(dollarsToStake);
+        IStake(stakeAddress).addRebaseFunds(dollarsToStake);
+        emit Transfer(address(0x0), stakeAddress, dollarsToStake);
+        
+        _totalSupply = _totalSupply.add(dollarsToBonds).add(dollarsToLPs).add(dollarsToStake);
+
+        disburse(uint256(supplyDelta).sub(dollarsToBonds).sub(dollarsToLPs).sub(dollarsToStake));
     }
 
     function initialize(address owner_, address seigniorageAddress)
@@ -441,7 +474,7 @@ contract Dollars is ERC20Detailed, Ownable {
         returns (uint256)
     {
         // bond holders get no debt
-        uint256 debt = (who == address(this) || who == poolRewardAddress) ? 0 : debtOwing(who);
+        uint256 debt = debtOwing(who);
         debt = debt <= _dollarBalances[who] ? debt : _dollarBalances[who];
 
         return _dollarBalances[who].sub(debt);
@@ -580,7 +613,7 @@ contract Dollars is ERC20Detailed, Ownable {
     }
 
     function debtOwing(address account) public view returns (uint256) {
-        if (_totalDebtPoints > debtPoints[account]) {
+        if (_totalDebtPoints > debtPoints[account] && !debaseWhitelist[account]) {
             uint256 newDebtPoints = _totalDebtPoints.sub(debtPoints[account]);
             uint256 dollarBalance = _dollarBalances[account];
             return dollarBalance.mul(newDebtPoints).div(POINT_MULTIPLIER);
@@ -603,7 +636,8 @@ contract Dollars is ERC20Detailed, Ownable {
         if (debt > 0) {
             _unclaimedDebt = debt <= _unclaimedDebt ? _unclaimedDebt.sub(debt) : 0;
 
-            if (_dollarBalances[account] >= debt && account != address(this) && account != poolRewardAddress && account != stakeAddress) {
+            // only debase non-whitelisted users
+            if (!debaseWhitelist[account]) {
                 debt = debt <= _dollarBalances[account] ? debt : _dollarBalances[account];
 
                 _dollarBalances[account] = _dollarBalances[account].sub(debt);
