@@ -5,7 +5,7 @@ import "openzeppelin-eth/contracts/math/SafeMath.sol";
 import "openzeppelin-eth/contracts/ownership/Ownable.sol";
 import "openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol";
 
-import "../lib/SafeMathInt.sol";
+import "./lib/SafeMathInt.sol";
 
 interface IShareHelper {
     function getChainId() external pure returns (uint);

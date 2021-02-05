@@ -12,7 +12,8 @@
     "precommit": "./scripts/pre-commit.sh",
     "lint": "npx eslint ./scripts ./test ./util *.js --cache --fix && npx solhint ./contracts/*.sol ./contracts/*/*.sol",
     "setup-ganache": "npx start-chain ganacheUnitTest && npm run deploy-contracts ganacheUnitTest",
-    "test": "./scripts/test.sh",
+    "ganache": "ganache-cli",
+    "test": "truffle test"
   },
   "pre-commit": {
     "run": [

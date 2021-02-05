@@ -6,7 +6,7 @@ import "openzeppelin-eth/contracts/ownership/Ownable.sol";
 import "openzeppelin-eth/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-eth/contracts/utils/ReentrancyGuard.sol";
 
-import "../lib/SafeMathInt.sol";
+import "./lib/SafeMathInt.sol";
 
 contract PoolReward is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
