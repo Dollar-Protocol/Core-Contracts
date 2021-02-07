@@ -8,26 +8,16 @@ import "openzeppelin-eth/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-eth/contracts/ownership/Ownable.sol";
 
 interface IDollarPolicy {
-    function getUsdSharePrice() external view returns (uint256 price);
     function treasury() external view returns (address);
 }
 
 interface IBond {
-    function mint(address _who, uint256 _amount) external;
-    function rebond(address _who, uint256 _amount, uint256 _usdAmount) external;
-    function remove(address _who, uint256 _amount, uint256 _usdAmount) external;
     function balanceOf(address who) external view returns (uint256);
-    function totalSupply() external view returns (uint256);
-    function setLastRebase(uint256 newUsdAmount) external;
-    function claimableProRataUSD(address _who) external view returns (uint256);
+    function redeem(address _who) external returns (bool);
 }
 
 interface IPool {
     function setLastRebase(uint256 newUsdAmount) external;
-}
-
-interface IStake {
-    function addRebaseFunds(uint256 newUsdAmount) external;    
 }
 
 /*
@@ -62,7 +52,7 @@ contract Dollars is ERC20Detailed, Ownable {
         _;
     }
 
-    uint256 public stakeToShareRatio;
+    uint256 public percentToTreasury;
 
     modifier validRecipient(address to) {
         require(to != address(0x0));
@@ -118,7 +108,7 @@ contract Dollars is ERC20Detailed, Ownable {
         _;
     }
 
-    address public stakeAddress;
+    address public treasury;
     event LogDollarReserveUpdated(address deprecated);
 
     mapping(address => bool) public debased; // mapping if an address has deleted 50% of their dollar tokens
@@ -139,9 +129,9 @@ contract Dollars is ERC20Detailed, Ownable {
     address[] public uniSyncPairs;
 
     bool public tenPercentCap;
-    uint256 public bondToShareRatio;
+    uint256 public deprecateVar1;
     event NewBondToShareRatio(uint256 ratio);
-    uint256 public bondSupply;
+    uint256 public deprecateVar2;
     address public bondAddress;
     bool public lastRebasePositive;
     address public poolRewardAddress;
@@ -164,7 +154,7 @@ contract Dollars is ERC20Detailed, Ownable {
         emit LogMonetaryPolicyUpdated(monetaryPolicy_);
     }
 
-    function setDebaseWhitelist(address user, bool val) {
+    function setDebaseWhitelist(address user, bool val) external {
         require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC));
         debaseWhitelist[user] = val;
         emit LogDebaseWhitelist(user, val);
@@ -191,14 +181,11 @@ contract Dollars is ERC20Detailed, Ownable {
         timelock = timelock_;
     }
 
-    function setBondShareRatio(uint256 val_)
-        external
-    {
+    // 9 digit number (100 * 10 ** 9 = 100%)
+    function setTreasuryPercent(uint256 percent) external {
         require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC));
-        require(val_ <= 100);
-
-        bondToShareRatio = val_;   
-        emit NewBondToShareRatio(bondToShareRatio);
+        require(percent <= 100 * 10 ** 9, 'percent too high');
+        percentToTreasury = percent;
     }
 
     function setLpToShareRatio(uint256 val_)
@@ -210,79 +197,26 @@ contract Dollars is ERC20Detailed, Ownable {
         lpToShareRatio = val_;
     }
 
-    function setStakeToShareRatio(uint256 val_)
-        external
-    {
-        require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC));
-        require(val_ <= 100);
-
-        stakeToShareRatio = val_;
-    }
-
-    function setBondAddress(address bond_) external onlyOwner {
-        bondAddress = bond_;
-    }
-
-    function setStakeAddress(address stake_) external onlyOwner {
-        stakeAddress = stake_;
+    function setTreasury(address treasury_) external onlyOwner {
+        treasury = treasury_;
     }
 
     function setPoolAddress(address pool_) external onlyOwner {
         poolRewardAddress = pool_;
     }
 
-    // number of dollars to bond
-    function bond(uint256 amount) updateAccount(msg.sender) external {
-        require(!reEntrancyMutex, "dp::reentrancy");
-        reEntrancyMutex = true;
+    // one time redeem
+    function redeemFinal() updateAccount(msg.sender) external {
+        uint256 currentBondBalance = IBond(bondAddress).balanceOf(msg.sender);
+        bool success = IBond(bondAddress).redeem(msg.sender);
+        require(success, 'unsuccessful redeem');
+        uint256 usdOwed = currentBondBalance.mul(uint256(1975359245)).div(uint256(1000000000));
+        _dollarBalances[msg.sender] = _dollarBalances[msg.sender].add(usdOwed);
+        _dollarBalances[address(this)] = _dollarBalances[address(this)].sub(usdOwed);
 
-        require(balanceOf(msg.sender) >= amount, "insufficient usd balance");
-
-        uint256 totalDollarBonded = balanceOf(address(this));
-        uint256 totalBonds = IBond(bondAddress).totalSupply();
-        
-        // 1-1 if negative rebase
-        if (totalBonds == 0 || totalDollarBonded == 0 || (!lastRebasePositive && !lastRebaseNeutral)) {
-            IBond(bondAddress).mint(msg.sender, amount);
-        } else {
-            uint256 bondAmount = amount.mul(totalBonds).div(totalDollarBonded);
-            IBond(bondAddress).mint(msg.sender, bondAmount);
-        }
-
-        _dollarBalances[msg.sender] = _dollarBalances[msg.sender].sub(amount);
-        _dollarBalances[address(this)] = _dollarBalances[address(this)].add(amount);
-
-        emit Transfer(msg.sender, address(this), amount);
-        reEntrancyMutex = false;
+        emit Transfer(address(this), msg.sender, usdOwed);
     }
-
-    function unbondMax(bool rebond) updateAccount(msg.sender) external {
-        require(!reEntrancyMutex, "dp::reentrancy");
-        reEntrancyMutex = true;
-
-        // can only redeem during a positive rebase
-        require(lastRebasePositive, "can only redeem during positive rebase!");
-
-        uint256 totalBonds = IBond(bondAddress).totalSupply();
-        uint256 dollarRedeemedAmount = IBond(bondAddress).claimableProRataUSD(msg.sender);
-        uint256 bondsToBurn = dollarRedeemedAmount.mul(totalBonds).div(balanceOf(address(this)));
-
-        require(IBond(bondAddress).balanceOf(msg.sender) >= bondsToBurn, "insufficient bond balance");
-
-        if (rebond) {
-            IBond(bondAddress).rebond(msg.sender, bondsToBurn, dollarRedeemedAmount);
-        } else {
-            IBond(bondAddress).remove(msg.sender, bondsToBurn, dollarRedeemedAmount);
-
-            _dollarBalances[msg.sender] = _dollarBalances[msg.sender].add(dollarRedeemedAmount);
-            _dollarBalances[address(this)] = _dollarBalances[address(this)].sub(dollarRedeemedAmount);
-
-            emit Transfer(address(this), msg.sender, dollarRedeemedAmount);
-        }
-
-        reEntrancyMutex = false;
-    }
-
+    
     function removeUniPair(uint256 index) external onlyOwner {
         if (index >= uniSyncPairs.length) return;
 
@@ -362,7 +296,6 @@ contract Dollars is ERC20Detailed, Ownable {
 
         if (supplyDelta == 0) {
             IPool(poolRewardAddress).setLastRebase(0);
-            IBond(bondAddress).setLastRebase(0);
 
             lastRebasePositive = false;
             lastRebaseNeutral = true;
@@ -371,7 +304,6 @@ contract Dollars is ERC20Detailed, Ownable {
             lastRebaseNeutral = false;
 
             IPool(poolRewardAddress).setLastRebase(0);
-            IBond(bondAddress).setLastRebase(0);
 
             if (debaseBoolean == 1) {
                 negativeRebaseHelper(epoch, supplyDelta);
@@ -412,25 +344,19 @@ contract Dollars is ERC20Detailed, Ownable {
     }
 
     function positiveRebaseHelper(int256 supplyDelta) internal {
-        uint256 dollarsToBonds = uint256(supplyDelta).mul(bondToShareRatio).div(100);
-        uint256 dollarsToLPs = uint256(supplyDelta).sub(dollarsToBonds).mul(lpToShareRatio).div(100);
-        uint256 dollarsToStake = uint256(supplyDelta).sub(dollarsToBonds).sub(dollarsToLPs).mul(stakeToShareRatio).div(100);
+        uint256 dollarsToTreasury = uint256(supplyDelta).mul(percentToTreasury).div(100 * 10 ** 9);
+        uint256 dollarsToLPs = uint256(supplyDelta).sub(dollarsToTreasury).mul(lpToShareRatio).div(100);
         
+        _dollarBalances[treasury] = _dollarBalances[treasury].add(dollarsToTreasury);
+        emit Transfer(address(0x0), treasury, dollarsToTreasury);
+
         IPool(poolRewardAddress).setLastRebase(dollarsToLPs);
         _dollarBalances[poolRewardAddress] = _dollarBalances[poolRewardAddress].add(dollarsToLPs);
         emit Transfer(address(0x0), poolRewardAddress, dollarsToLPs);
-
-        _dollarBalances[address(this)] = _dollarBalances[address(this)].add(dollarsToBonds);
-        IBond(bondAddress).setLastRebase(dollarsToBonds);
-        emit Transfer(address(0x0), address(this), dollarsToBonds);
-
-        _dollarBalances[stakeAddress] = _dollarBalances[stakeAddress].add(dollarsToStake);
-        IStake(stakeAddress).addRebaseFunds(dollarsToStake);
-        emit Transfer(address(0x0), stakeAddress, dollarsToStake);
         
-        _totalSupply = _totalSupply.add(dollarsToBonds).add(dollarsToLPs).add(dollarsToStake);
+        _totalSupply = _totalSupply.add(dollarsToTreasury).add(dollarsToLPs);
 
-        disburse(uint256(supplyDelta).sub(dollarsToBonds).sub(dollarsToLPs).sub(dollarsToStake));
+        disburse(uint256(supplyDelta).sub(dollarsToTreasury).sub(dollarsToLPs));
     }
 
     function initialize(address owner_, address seigniorageAddress)
@@ -473,7 +399,6 @@ contract Dollars is ERC20Detailed, Ownable {
         view
         returns (uint256)
     {
-        // bond holders get no debt
         uint256 debt = debtOwing(who);
         debt = debt <= _dollarBalances[who] ? debt : _dollarBalances[who];
 
@@ -652,38 +577,6 @@ contract Dollars is ERC20Detailed, Ownable {
         debtPoints[account] = _totalDebtPoints;
 
         _;
-    }
-
-    function unclaimedDividends()
-        external
-        view
-        returns (uint256)
-    {
-        return _unclaimedDividends;
-    }
-
-    function totalDividendPoints()
-        external
-        view
-        returns (uint256)
-    {
-        return _totalDividendPoints;
-    }
-
-    function unclaimedDebt()
-        external
-        view
-        returns (uint256)
-    {
-        return _unclaimedDebt;
-    }
-
-    function totalDebtPoints()
-        external
-        view
-        returns (uint256)
-    {
-        return _totalDebtPoints;
     }
 
     function disburse(uint256 amount) internal returns (bool) {
