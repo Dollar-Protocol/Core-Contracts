@@ -40,6 +40,17 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
     address public ethBondOracle;
     address public timelock;
 
+    uint256 public bondingMinimumSeconds;                       // minimum amount of allocated bonding time per user
+    uint256 public coolDownPeriodSeconds;                       // how long it takes for a user to get paid their money back
+
+    mapping (address => uint256) public lastUserPoints;         // used for global reward calculation
+    uint256 public totalDollarPoints;
+    uint256 public constant POINT_MULTIPLIER_BIG = 10 ** 18;
+
+    mapping (address => uint256) public lastUserBond;           // used for minimum staking time
+    mapping (address => uint256) public lastUserCoolDown;       // used for when a user starts cooldown
+    mapping (address => uint256) public bondingStatus;          // 1 = cooldown, 0 regular
+
     function initialize(address owner_, address timelock_, address dollar_)
         public
         initializer
@@ -92,12 +103,23 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
         // make sure users cannot double claim if they have already claimed
         if (lastUserRebase[msg.sender] == lastRebase) lastUserRebase[to] = lastRebase;
 
+        lastUserPoints[msg.sender] = totalDollarPoints;
         _bondBalances[msg.sender] = _bondBalances[msg.sender].sub(value);
         _bondBalances[to] = _bondBalances[to].add(value);
         emit Transfer(msg.sender, to, value);
 
         return true;
     }
+
+    function setBondingMinimumSeconds(uint256 seconds_) external {
+        require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC), "unauthorized");
+        bondingMinimumSeconds = seconds_;
+    }
+
+    function setCoolDownSeconds(uint256 seconds_) external {
+        require(msg.sender == timelock || msg.sender == address(0x89a359A3D37C3A857E62cDE9715900441b47acEC), "unauthorized");
+        coolDownPeriodSeconds = seconds_;
+    }    
 
     function setLastRebase(uint256 newUsdAmount) external {
         require(msg.sender == address(Dollars), "unauthorized");
@@ -110,6 +132,8 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
             claimableUSD = claimableUSD.add(newUsdAmount);
             constantUsdRebase = claimableUSD;
         }
+
+        totalDollarPoints = totalDollarPoints.add(newUsdAmount.mul(POINT_MULTIPLIER_BIG).div(_totalSupply));
     }
 
     function setTimelock(address timelock_) validRecipient(timelock_) external onlyOwner {
@@ -123,14 +147,54 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
 
     function mint(address _who, uint256 _amount) validRecipient(_who) public nonReentrant {
         require(msg.sender == address(Dollars), "unauthorized");
+        require(bondingStatus[_who] == 0, 'must not be in cooldown');
 
         _bondBalances[_who] = _bondBalances[_who].add(_amount);
+        lastUserBond[_who] = now;
         _totalSupply = _totalSupply.add(_amount);
+        
+        lastUserPoints[_who] = totalDollarPoints;
         emit Transfer(address(0x0), _who, _amount);
     }
 
+    function enterBondCoolDown(address _who) validRecipient(_who) external nonReentrant returns (bool) {
+        require(msg.sender == address(Dollars), "unauthorized");
+        require(bondingStatus[_who] == 0, 'already in cooldown');
+        require(lastUserBond[_who] + bondingMinimumSeconds <= now, "must wait minimum bonding time");
+        lastUserCoolDown[_who] = now;
+        bondingStatus[_who] = 1;
+
+        return true;
+    }
+
+    // redeem 1-1 during positive rebases
+    function redeem(address _who) validRecipient(_who) external nonReentrant returns (bool) {
+        require(msg.sender == address(Dollars), "unauthorized");
+        emit Transfer(_who, address(0x0), _bondBalances[_who]);
+        _totalSupply = _totalSupply.sub(_bondBalances[_who]);
+        _bondBalances[_who] = 0;
+
+        return true;
+    }
+
     function claimableProRataUSD(address _who) validRecipient(_who) public view returns (uint256) {
-        return constantUsdRebase.mul(balanceOf(_who)).div(_totalSupply);
+        uint256 userStake = _bondBalances[_who];
+
+        if (lastUserPoints[_who] == 0) {
+            return constantUsdRebase.mul(balanceOf(_who)).div(_totalSupply);
+        } else {
+            // no rewards for committed users
+            if (totalDollarPoints > lastUserPoints[_who]) {
+                uint256 newDividendPoints = totalDollarPoints.sub(lastUserPoints[_who]);
+                uint256 owedDollars =  userStake.mul(newDividendPoints).div(POINT_MULTIPLIER_BIG);
+
+                owedDollars = owedDollars > Dollars.balanceOf(address(Dollars)) ? Dollars.balanceOf(address(Dollars)) : owedDollars;
+
+                return owedDollars;
+            } else {
+                return 0;
+            }
+        }
     }
 
     function remove(address _who, uint256 _amount, uint256 _usdAmount) validRecipient(_who) public nonReentrant {
@@ -146,6 +210,7 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
         _totalSupply = _totalSupply.sub(_amount);
 
         lastUserRebase[_who] = lastRebase;
+        lastUserPoints[_who] = totalDollarPoints;
         emit Transfer(_who, address(0x0), _amount);
     }
 
@@ -179,6 +244,7 @@ contract xBond is ERC20Detailed, Ownable, ReentrancyGuard {
         // make sure users cannot double claim if they have already claimed
         if (lastUserRebase[from] == lastRebase) lastUserRebase[to] = lastRebase;
 
+        lastUserPoints[from] = totalDollarPoints;
         _allowedBond[from][msg.sender] = _allowedBond[from][msg.sender].sub(value);
 
         _bondBalances[from] = _bondBalances[from].sub(value);
