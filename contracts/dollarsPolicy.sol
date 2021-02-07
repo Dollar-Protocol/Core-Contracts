@@ -1,7 +1,7 @@
 pragma solidity >=0.4.24;
 
-import "./lib/SafeMathInt.sol";
-import "./lib/UInt256Lib.sol";
+import "../lib/SafeMathInt.sol";
+import "../lib/UInt256Lib.sol";
 import "./dollars.sol";
 
 /*
@@ -153,8 +153,8 @@ contract DollarsPolicy is Ownable {
         }
 
         // set minimum floor
-        if (supplyDelta < 0 && dollars.totalSupply().add(dollars.totalDividendPoints()).sub(dollars.totalDebtPoints()).sub(uint256(supplyDelta.abs())) < minimumDollarCirculation) {
-            supplyDelta = (dollars.totalSupply().add(dollars.totalDividendPoints()).sub(dollars.totalDebtPoints()).sub(minimumDollarCirculation)).toInt256Safe();
+        if (supplyDelta < 0 && dollars.totalSupply().sub(uint256(supplyDelta.abs())) < minimumDollarCirculation) {
+            supplyDelta = (dollars.totalSupply().sub(minimumDollarCirculation)).toInt256Safe();
         }
 
         uint256 supplyAfterRebase;
@@ -181,8 +181,8 @@ contract DollarsPolicy is Ownable {
 
     function setCpi(uint256 cpi_)
         external
-        onlyOwner
     {
+        require(msg.sender == timelock);
         require(cpi_ > 0);
         cpi = cpi_;
     }
