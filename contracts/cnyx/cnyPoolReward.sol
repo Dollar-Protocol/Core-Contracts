@@ -8,7 +8,7 @@ import "openzeppelin-eth/contracts/utils/ReentrancyGuard.sol";
 
 import "../lib/SafeMathInt.sol";
 
-contract PoolReward is Ownable, ReentrancyGuard {
+contract CNYxPoolReward is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeMathInt for int256;
 
