@@ -49,8 +49,7 @@ We ran internally a host of security tests, including Echidna, Manticore, Mythri
 * Seigniorage Governor Alpha [0x59f83d677898f7E0D68ECb225395D41FB190cb35](http://etherscan.io/address/0x59f83d677898f7E0D68ECb225395D41FB190cb35)
 * Dollar Timelock [0xf4a4534a9A049E5B3B6701e71b276b8a11F09139](http://etherscan.io/address/0xf4a4534a9A049E5B3B6701e71b276b8a11F09139)
 
-* Liquidity Mining Reserve for future (Uniswap V3 and beyond) - Multisig: [0x01b6e2C30B27b3D2E15595E89F2115B139Eaf597](http://etherscan.io/address/0x01b6e2C30B27b3D2E15595E89F2115B139Eaf597)
-* Team: [0xf23A63b68671bc75E1e6644f2aBaCB0c1d8B5BB0](http://etherscan.io/address/0xf23A63b68671bc75E1e6644f2aBaCB0c1d8B5BB0)
+* Liquidity Mining Reserve for future - Multisig: [0x01b6e2C30B27b3D2E15595E89F2115B139Eaf597](http://etherscan.io/address/0x01b6e2C30B27b3D2E15595E89F2115B139Eaf597)
 
 * Liquidity Mining Contract for UniswapV2 ETH-USD: [0xC122C726D5F9975e87D710dFc021CbA6cDe8b718](http://etherscan.io/address/0xC122C726D5F9975e87D710dFc021CbA6cDe8b718)
 * Liquidity Mining Contract for UniswapV2 YFI-USD: [0xE439285C0951Ca640FaBd83E5d992Bf343839B06](http://etherscan.io/address/0xE439285C0951Ca640FaBd83E5d992Bf343839B06)
