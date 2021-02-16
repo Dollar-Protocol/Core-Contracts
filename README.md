@@ -36,21 +36,27 @@ In this way, we preserve the stablecoin price AND the purchasing power of the wa
 We ran internally a host of security tests, including Echidna, Manticore, Mythril OSS, Securify and Slither. The results of such reports are in the security folder.
 
 ## Ecosystem Addresses (V2)
-* Dollar: [0x2F6081E3552b1c86cE4479B80062A1ddA8EF23E3](http://etherscan.io/address/0x2F6081E3552b1c86cE4479B80062A1ddA8EF23E3)
+* USDx: [0x2F6081E3552b1c86cE4479B80062A1ddA8EF23E3](http://etherscan.io/address/0x2F6081E3552b1c86cE4479B80062A1ddA8EF23E3)
+* CNYx: [0x07f89875b1F142AbCba60FF1D7FCFb7Fe404d4ed](http://etherscan.io/address/0x07f89875b1F142AbCba60FF1D7FCFb7Fe404d4ed)
 * DollarPolicy: [0x452a3F4A4E8E81B619d88c2B44Bd160ce8B4fc03](http://etherscan.io/address/0x452a3F4A4E8E81B619d88c2B44Bd160ce8B4fc03)
+* CNYxPolicy: [0xD7b6C3eBCD8C7701CDdB2544CA68118BFceCE8E2](http://etherscan.io/address/0xD7b6C3eBCD8C7701CDdB2544CA68118BFceCE8E2)
 * Orchestrator: [0xb3D027CbF33695fA651412e4eD1Cb299cF1cF068](http://etherscan.io/address/0xb3D027CbF33695fA651412e4eD1Cb299cF1cF068)
+* CNYxOrchestrator: [0x3ccbBEd50134283a7FD2EE62456c8526b2B33DD5](http://etherscan.io/address/0x3ccbBEd50134283a7FD2EE62456c8526b2B33DD5)
 * SeigniorageShares: [0x39795344CBCc76cC3Fb94B9D1b15C23c2070C66D](http://etherscan.io/address/0x39795344CBCc76cC3Fb94B9D1b15C23c2070C66D)
 * Decentralized Oracle SHR-USD: [0xbA20E267D061997b3e1CCBcd6843ef3e6626dCCd](http://etherscan.io/address/0xbA20E267D061997b3e1CCBcd6843ef3e6626dCCd)
 * Decentralized Oracle ETH-USD: [0x51f729D292f8cc6A0E1D4936fA1F4B5AaE1cFeEE](http://etherscan.io/address/0x51f729D292f8cc6A0E1D4936fA1F4B5AaE1cFeEE)
 * Decentralized Oracle ETH-USDC: [0x905C1036C12DF0e1701629979D7305bBB35D802b](http://etherscan.io/address/0x905C1036C12DF0e1701629979D7305bBB35D802b)
 * Decentralized Oracle xBOND-ETH [0xb2bc8e996331ee37ddac7050acafbec6109dd429](http://etherscan.io/address/0xb2bc8e996331ee37ddac7050acafbec6109dd429)
-* PoolReward [0x145B9340D4Db4042350F51CfAE982a5004416867](http://etherscan.io/address/0x145B9340D4Db4042350F51CfAE982a5004416867)
+* USDxPoolReward [0x145B9340D4Db4042350F51CfAE982a5004416867](http://etherscan.io/address/0x145B9340D4Db4042350F51CfAE982a5004416867)
+* CNYxPoolReward [0xD7b6C3eBCD8C7701CDdB2544CA68118BFceCE8E2](http://etherscan.io/address/0xD7b6C3eBCD8C7701CDdB2544CA68118BFceCE8E2)
 * xBond [0xa8f8dC37f3aB1F2357eC1B6345e02798b4124DCD](http://etherscan.io/address/0xa8f8dC37f3aB1F2357eC1B6345e02798b4124DCD)
 * Seigniorage Governor Alpha [0x59f83d677898f7E0D68ECb225395D41FB190cb35](http://etherscan.io/address/0x59f83d677898f7E0D68ECb225395D41FB190cb35)
 * Dollar Timelock [0xf4a4534a9A049E5B3B6701e71b276b8a11F09139](http://etherscan.io/address/0xf4a4534a9A049E5B3B6701e71b276b8a11F09139)
 
 * Liquidity Mining Reserve for future - Multisig: [0x01b6e2C30B27b3D2E15595E89F2115B139Eaf597](http://etherscan.io/address/0x01b6e2C30B27b3D2E15595E89F2115B139Eaf597)
+* Liquidity Mining Contract for UniswapV2 SHARE-ETH: [0x305fFCF8C97D2BF51A4c270e2B20850De90AbF3A](http://etherscan.io/address/0x305fFCF8C97D2BF51A4c270e2B20850De90AbF3A)
 
+## Deprecated Pools
 * Liquidity Mining Contract for UniswapV2 ETH-USD: [0xC122C726D5F9975e87D710dFc021CbA6cDe8b718](http://etherscan.io/address/0xC122C726D5F9975e87D710dFc021CbA6cDe8b718)
 * Liquidity Mining Contract for UniswapV2 YFI-USD: [0xE439285C0951Ca640FaBd83E5d992Bf343839B06](http://etherscan.io/address/0xE439285C0951Ca640FaBd83E5d992Bf343839B06)
 * Liquidity Mining Contract for Mooniswap yCRV-USD: [0x38140A4b11a11dC6b5189FBbCF4af6eF7Dcc68C6](http://etherscan.io/address/0x38140A4b11a11dC6b5189FBbCF4af6eF7Dcc68C6)
@@ -61,7 +67,6 @@ We ran internally a host of security tests, including Echidna, Manticore, Mythri
 * Liquidity Mining Contract for UniswapV2 MKR-USD: [0x1b2e74e0bc2aede133769ab3b5bc7b9bd14df0ed](http://etherscan.io/address/0x1b2e74e0bc2aede133769ab3b5bc7b9bd14df0ed)
 * Liquidity Mining Contract for UniswapV2 COMP-USD: [0x48e39B5bb84558a53f9ce206c2B6Da56C33f2aEe](http://etherscan.io/address/0x48e39B5bb84558a53f9ce206c2B6Da56C33f2aEe)
 * Liquidity Mining Contract for UniswapV2 LINK-USD: [0x24bed893c46dba8693215b7cb8da426b0111c6aa](http://etherscan.io/address/0x24bed893c46dba8693215b7cb8da426b0111c6aa)
-* Liquidity Mining Contract for UniswapV2 SHARE-ETH: [0x305fFCF8C97D2BF51A4c270e2B20850De90AbF3A](http://etherscan.io/address/0x305fFCF8C97D2BF51A4c270e2B20850De90AbF3A)
 
 
 To learn more about the project, please visit [https://dollarprotocol.com](https://dollarprotocol.com)
