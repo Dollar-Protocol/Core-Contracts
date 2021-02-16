@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  A better elastic money supply protocol, powered by $SHARE, $USDx and $xBOND.
+  An ecosystem of synthetic assets (USDx, CNYx, TSLAx and more) powered by $SHARE
 </p>
 
 [![Home Page](https://img.shields.io/badge/homepage-view-red.svg)](https://dollarprotocol.com/)
